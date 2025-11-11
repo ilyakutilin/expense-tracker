@@ -1,0 +1,25 @@
+[project]
+name = "expense-tracker"
+version = "0.1.0"
+description = "A simple expense tracker for personal use."
+authors = [
+    {name = "Ilya Kutilin",email = "ilyakutilin@yandex.ru"}
+]
+license = "MIT"
+readme = "../README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard-no-fastapi-cloud-cli] (>=0.121.1,<0.122.0)",
+    "sqlmodel (>=0.0.27,<0.0.28)",
+    "pydantic-settings (>=2.12.0,<3.0.0)",
+    "alembic (>=1.17.1,<2.0.0)",
+    "asyncpg (>=0.30.0,<0.31.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
