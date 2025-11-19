@@ -3,9 +3,19 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, Numeric, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    Date,
+    ForeignKey,
+    Numeric,
+    String,
+    Table,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.db import BaseORM
 from app.models.base import BaseModelORM
 
 if TYPE_CHECKING:
@@ -28,6 +38,14 @@ class OperationType(Enum):
         return {t.value for t in cls}
 
 
+operation_tag = Table(
+    "operation_tag",
+    BaseORM.metadata,
+    Column("operation_id", ForeignKey("operation.id"), primary_key=True),
+    Column("tag_id", ForeignKey("tag.id"), primary_key=True),
+)
+
+
 class OperationORM(BaseModelORM):
     __tablename__ = "operation"
 
@@ -46,9 +64,6 @@ class OperationORM(BaseModelORM):
     to_acc_id: Mapped[int] = mapped_column(
         ForeignKey("account.id", ondelete="RESTRICT"), index=True
     )
-    tag_id: Mapped[int | None] = mapped_column(
-        ForeignKey("tag.id", ondelete="SET NULL"), index=True
-    )
     amount: Mapped[int]
     currency_id: Mapped[int] = mapped_column(
         ForeignKey("currency.id", ondelete="RESTRICT"), index=True
@@ -58,9 +73,9 @@ class OperationORM(BaseModelORM):
         default=Decimal("1.0"),
     )
     commission: Mapped[int] = mapped_column(default=0)
-    date: Mapped[dt.date]
-    comment: Mapped[str] = mapped_column(Text, default="")
-    is_template: Mapped[bool] = mapped_column(default=False)
+    date: Mapped[dt.date] = mapped_column(Date, index=True)
+    comment: Mapped[str] = mapped_column(Text, default="", index=True)
+    is_template: Mapped[bool] = mapped_column(default=False, index=True)
 
     from_acc: Mapped["AccountORM"] = relationship(
         "AccountORM",
@@ -74,9 +89,11 @@ class OperationORM(BaseModelORM):
         back_populates="operations_to",
     )
 
-    tag: Mapped["TagORM | None"] = relationship(
+    tags: Mapped[list["TagORM"]] = relationship(
         "TagORM",
+        secondary=operation_tag,
         back_populates="operations",
+        lazy="selectin",
     )
 
     currency: Mapped["CurrencyORM"] = relationship(
