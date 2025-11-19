@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from backend.app.core.db import BaseORM
 
 
-class BaseModelORM(BaseORM):
+class BaseModelNoTimestampsORM(BaseORM):
     __abstract__ = True
 
     id_: Mapped[int] = mapped_column(
@@ -22,6 +22,11 @@ class BaseModelORM(BaseORM):
         ),
         sort_order=-1,
     )
+
+
+class BaseModelORM(BaseModelNoTimestampsORM):
+    __abstract__ = True
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.now(timezone.utc),
