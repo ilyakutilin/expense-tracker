@@ -1,6 +1,12 @@
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncAttrs,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.settings import db_settings
 
@@ -16,6 +22,10 @@ class PreBaseORM:
                 cols.append(f"{col}={getattr(self, col)}")
 
         return f"<{self.__class__.__name__} ({', '.join(cols)})>"
+
+
+class BaseORM(AsyncAttrs, DeclarativeBase, PreBaseORM):
+    pass
 
 
 async_engine = create_async_engine(db_settings.db_url, echo=True, future=True)
