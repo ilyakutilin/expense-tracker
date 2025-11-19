@@ -7,13 +7,21 @@ from backend.app.models.base import BaseModelNoTimestampsORM
 
 if TYPE_CHECKING:
     from backend.app.models.account import AccountORM
+    from backend.app.models.operation import OperationORM
 
 
 class CurrencyORM(BaseModelNoTimestampsORM):
     __tablename__ = "currency"
 
     code: Mapped[str] = mapped_column(String(5), unique=True, index=True)
+    is_default: Mapped[bool] = mapped_column(default=False)
 
-    accounts: Mapped["AccountORM"] = relationship(
-        "AccountORM", back_populates="currency"
+    accounts: Mapped[list["AccountORM"]] = relationship(
+        "AccountORM",
+        back_populates="currency",
+    )
+
+    operations: Mapped[list["OperationORM"]] = relationship(
+        "OperationORM",
+        back_populates="currency",
     )
