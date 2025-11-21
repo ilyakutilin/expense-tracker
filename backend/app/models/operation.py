@@ -1,41 +1,23 @@
 import datetime as dt
 from decimal import Decimal
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    CheckConstraint,
     Column,
     Date,
     ForeignKey,
     Numeric,
-    String,
     Table,
     Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import BaseORM
-from app.models.base import BaseModelORM
+from app.models.mixins import CreatedUpdatedMixin
 
 if TYPE_CHECKING:
-    from backend.app.models.account import AccountORM
-    from backend.app.models.currency import CurrencyORM
-    from backend.app.models.tag import TagORM
-
-
-class OperationType(Enum):
-    INCOME = "income"
-    EXPENSE = "expense"
-    TRANSFER = "transfer"
-    EXCHANGE = "exchange"
-    INITIAL = "initial"
-    CORRECTION = "correction"
-    REFUND = "refund"
-
-    @classmethod
-    def get_values(cls) -> set[str]:
-        return {t.value for t in cls}
+    from app.models.account import AccountORM
+    from app.models.tag import TagORM
 
 
 operation_tag = Table(
@@ -46,33 +28,20 @@ operation_tag = Table(
 )
 
 
-class OperationORM(BaseModelORM):
-    __tablename__ = "operation"
-
-    type_: Mapped[str] = mapped_column(
-        "type",
-        String(50),
-        CheckConstraint(
-            f"type in {', '.join(OperationType.get_values())}",
-            name="chk_operation_type",
-        ),
-        index=True,
-    )
+class OperationORM(BaseORM, CreatedUpdatedMixin):
+    type_: Mapped[str] = mapped_column("type", Text, index=True)
     from_acc_id: Mapped[int] = mapped_column(
         ForeignKey("account.id", ondelete="RESTRICT"), index=True
     )
     to_acc_id: Mapped[int] = mapped_column(
         ForeignKey("account.id", ondelete="RESTRICT"), index=True
     )
-    amount: Mapped[int]
-    currency_id: Mapped[int] = mapped_column(
-        ForeignKey("currency.id", ondelete="RESTRICT"), index=True
+    from_amount: Mapped[Decimal] = mapped_column(
+        Numeric(precision=23, scale=8, decimal_return_scale=8, asdecimal=True)
     )
-    exchange_rate: Mapped[Decimal] = mapped_column(
-        Numeric(precision=16, scale=6, decimal_return_scale=6, asdecimal=True),
-        default=Decimal("1.0"),
+    to_amount: Mapped[Decimal] = mapped_column(
+        Numeric(precision=23, scale=8, decimal_return_scale=8, asdecimal=True)
     )
-    commission: Mapped[int] = mapped_column(default=0)
     date: Mapped[dt.date] = mapped_column(Date, index=True)
     comment: Mapped[str] = mapped_column(Text, default="", index=True)
     is_template: Mapped[bool] = mapped_column(default=False, index=True)
@@ -94,9 +63,4 @@ class OperationORM(BaseModelORM):
         secondary=operation_tag,
         back_populates="operations",
         lazy="selectin",
-    )
-
-    currency: Mapped["CurrencyORM"] = relationship(
-        "CurrencyORM",
-        back_populates="operations",
     )

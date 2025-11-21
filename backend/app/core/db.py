@@ -1,30 +1,47 @@
 from typing import AsyncGenerator
 
+from sqlalchemy import BigInteger, Identity
 from sqlalchemy.ext.asyncio import (
     AsyncAttrs,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 from app.core.settings import db_settings
 
 
 class PreBaseORM:
-    repr_exclude_cols = ("created_at", "updated_at")
+    @declared_attr.directive
+    def __tablename__(cls):
+        return cls.__name__.lower().replace("orm", "")  # type: ignore
+
+    id_: Mapped[int] = mapped_column(
+        "id",
+        BigInteger,
+        Identity(
+            always=True,
+            start=1,
+            increment=1,
+            nominvalue=True,
+            nomaxvalue=True,
+            cycle=False,
+        ),
+        primary_key=True,
+        sort_order=-1,
+    )
 
     def __repr__(self):
         """String representation of an ORM Model."""
         cols = []
         for col in self.__table__.columns.keys():  # type: ignore
-            if col not in self.repr_exclude_cols:
-                cols.append(f"{col}={getattr(self, col)}")
+            cols.append(f"{col}={getattr(self, col)}")
 
         return f"<{self.__class__.__name__} ({', '.join(cols)})>"
 
 
-class BaseORM(AsyncAttrs, DeclarativeBase, PreBaseORM):
+class BaseORM(PreBaseORM, AsyncAttrs, DeclarativeBase):
     pass
 
 

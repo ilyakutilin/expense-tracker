@@ -1,27 +1,19 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.app.models.base import BaseModelNoTimestampsORM
+from app.core.db import BaseORM
 
 if TYPE_CHECKING:
-    from backend.app.models.account import AccountORM
-    from backend.app.models.operation import OperationORM
+    from app.models.account import AccountORM
 
 
-class CurrencyORM(BaseModelNoTimestampsORM):
-    __tablename__ = "currency"
-
-    code: Mapped[str] = mapped_column(String(5), unique=True, index=True)
-    is_default: Mapped[bool] = mapped_column(default=False)
+class CurrencyORM(BaseORM):
+    code: Mapped[str] = mapped_column(Text, unique=True, index=True)
+    symbol: Mapped[str | None] = mapped_column(Text)
 
     accounts: Mapped[list["AccountORM"]] = relationship(
         "AccountORM",
-        back_populates="currency",
-    )
-
-    operations: Mapped[list["OperationORM"]] = relationship(
-        "OperationORM",
         back_populates="currency",
     )
