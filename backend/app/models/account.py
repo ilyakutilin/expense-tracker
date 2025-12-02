@@ -28,7 +28,7 @@ class AccountORM(BaseORM, CreatedUpdatedMixin):
 
     parent: Mapped["AccountORM | None"] = relationship(
         "AccountORM",
-        remote_side=[BaseORM.id_],
+        remote_side="AccountORM.id_",
         back_populates="children",
         foreign_keys=[parent_id],
     )
