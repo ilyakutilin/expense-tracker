@@ -1,4 +1,10 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+)
 
 
 class CurrencyCreate(BaseModel):
@@ -7,6 +13,12 @@ class CurrencyCreate(BaseModel):
 
 
 class CurrencyResponse(CurrencyCreate):
-    id_: int
+    id_: int = Field(serialization_alias="id")
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_serializer(mode="wrap")
+    def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, int | str]:
+        serialized = handler(self)
+        key_order = ["id", "code", "symbol"]
+        return {k: serialized[k] for k in key_order}

@@ -4,9 +4,8 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 
-from app import crud, schemas
+from app import crud, models, schemas
 from app.core import exceptions as exc
-from app.models.currency import CurrencyORM
 
 
 class CurrencyService:
@@ -24,5 +23,13 @@ class CurrencyService:
                 detail={"code": currency_create.code},
             )
         currency_data: dict[str, Any] = currency_create.model_dump()
-        db_obj: CurrencyORM = await self.crud.create_currency(self.db, currency_data)
-        return schemas.CurrencyResponse.model_validate(db_obj, by_alias=True)
+        db_obj: models.CurrencyORM = await self.crud.create_currency(
+            self.db, currency_data
+        )
+        return schemas.CurrencyResponse.model_validate(db_obj)
+
+    async def get_all_currencies(self) -> list[schemas.CurrencyResponse]:
+        currencies: list[models.CurrencyORM] = await self.crud.get_all_currencies(
+            self.db
+        )
+        return [schemas.CurrencyResponse.model_validate(c) for c in currencies]
