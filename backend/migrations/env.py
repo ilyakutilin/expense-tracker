@@ -3,7 +3,7 @@ from logging.config import fileConfig
 
 from alembic import context
 from app.core.base import BaseORM
-from app.core.settings import db_settings
+from app.core.settings import settings
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option("sqlalchemy.url", db_settings.db_url)
+config.set_main_option("sqlalchemy.url", settings.db_settings.db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

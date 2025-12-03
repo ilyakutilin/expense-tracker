@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
-from app.core.settings import db_settings
+from app.core.settings import settings
 
 
 class PreBaseORM:
@@ -45,7 +45,7 @@ class BaseORM(PreBaseORM, AsyncAttrs, DeclarativeBase):
     pass
 
 
-async_engine = create_async_engine(db_settings.db_url, echo=True, future=True)
+async_engine = create_async_engine(settings.db_settings.db_url, echo=True, future=True)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=async_engine, class_=AsyncSession, expire_on_commit=False
