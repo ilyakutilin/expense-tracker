@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from dotenv import find_dotenv
+from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 APP_DIR = Path(__file__).resolve().parent.parent
@@ -25,18 +26,46 @@ class DBSettings(BaseSettings):
     model_config = SETTINGS_MODEL_CONFIG.copy()
     model_config["env_prefix"] = "db_"
 
-    host: str = "localhost"
-    port: int = 5432
-    name: str = "postgres"
-    user: str = "postgres"
-    password: str = ""
+    HOST: str = "localhost"
+    PORT: int = 5432
+    NAME: str = "postgres"
+    USER: str = "postgres"
+    PASSWORD: str = ""
 
     @property
     def db_url(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.user}:{self.password}@"
-            f"{self.host}:{self.port}/{self.name}"
+            f"postgresql+asyncpg://{self.USER}:{self.PASSWORD}@"
+            f"{self.HOST}:{self.PORT}/{self.NAME}"
         )
 
 
-db_settings = DBSettings()
+class Settings(BaseSettings):
+    model_config = SETTINGS_MODEL_CONFIG.copy()
+
+    PROJECT_NAME: str = "Expense Tracker"
+    APP_VERSION: str = "0.1.0"
+    API_V1_STR: str = "/api/v1"
+    DEBUG: bool = False
+
+    BACKEND_CORS_ORIGINS: list[str | AnyHttpUrl] = []
+
+    db_settings: DBSettings = DBSettings()
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, (list, str)):
+            return v
+        raise ValueError(v)
+
+    @property
+    def cors_origins(self) -> list[str]:
+        if self.DEBUG:
+            return ["*"]
+        return self.BACKEND_CORS_ORIGINS
+
+
+settings = Settings()
