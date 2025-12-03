@@ -3,7 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import CurrencyORM
-from app.schemas import CurrencyDB
+from app.schemas import CurrencyResponse
 
 
 class CRUDCurrency:
@@ -20,7 +20,7 @@ class CRUDCurrency:
         self,
         db_session: AsyncSession,
         currency_data: dict,
-    ) -> CurrencyDB:
+    ) -> CurrencyResponse:
         try:
             db_currency = CurrencyORM(**currency_data)
 

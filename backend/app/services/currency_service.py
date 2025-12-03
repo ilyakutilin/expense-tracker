@@ -16,7 +16,7 @@ class CurrencyService:
 
     async def create_currency(
         self, currency_create: schemas.CurrencyCreate
-    ) -> schemas.CurrencyDB:
+    ) -> schemas.CurrencyResponse:
         currency_exists = await self.crud.currency_exists(self.db, currency_create.code)
         if currency_exists:
             raise exc.ConflictError(
@@ -25,4 +25,4 @@ class CurrencyService:
             )
         currency_data: dict[str, Any] = currency_create.model_dump()
         db_obj: CurrencyORM = await self.crud.create_currency(self.db, currency_data)
-        return schemas.CurrencyDB.model_validate(db_obj, by_alias=True)
+        return schemas.CurrencyResponse.model_validate(db_obj, by_alias=True)

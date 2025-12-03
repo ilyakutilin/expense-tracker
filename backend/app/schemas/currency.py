@@ -6,7 +6,7 @@ class CurrencyCreate(BaseModel):
     symbol: str | None = Field(None, min_length=1, max_length=1)
 
 
-class CurrencyDB(CurrencyCreate):
+class CurrencyResponse(CurrencyCreate):
     id_: int
 
     model_config = ConfigDict(from_attributes=True)
