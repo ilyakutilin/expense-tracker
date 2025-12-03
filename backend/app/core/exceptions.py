@@ -1,5 +1,7 @@
 from typing import Any, Optional
 
+from fastapi import status
+
 
 class AppException(Exception):
     """Base exception for the application"""
@@ -48,11 +50,11 @@ class AppException(Exception):
 #         )
 
 
-# class ConflictError(AppException):
-#     def __init__(self, message: str = "Conflict", detail: Any = None):
-#         super().__init__(
-#             status_code=status.HTTP_409_CONFLICT, message=message, detail=detail
-#         )
+class ConflictError(AppException):
+    def __init__(self, message: str = "Conflict", detail: Any = None):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT, message=message, detail=detail
+        )
 
 
 # class ValidationError(AppException):

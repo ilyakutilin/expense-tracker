@@ -1,17 +1,27 @@
-from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import CurrencyORM
-from app.schemas import CurrencyCreate
+from app.schemas import CurrencyDB
 
 
 class CRUDCurrency:
+    async def currency_exists(
+        self,
+        db_session: AsyncSession,
+        code: str,
+    ) -> bool:
+        query = select(CurrencyORM).where(CurrencyORM.code == code)
+        result = await db_session.execute(query)
+        return result.scalar_one_or_none() is not None
+
     async def create_currency(
-        self, currency_schema: CurrencyCreate, db_session: AsyncSession
-    ):
+        self,
+        db_session: AsyncSession,
+        currency_data: dict,
+    ) -> CurrencyDB:
         try:
-            currency_data = currency_schema.model_dump()
             db_currency = CurrencyORM(**currency_data)
 
             db_session.add(db_currency)
@@ -20,18 +30,9 @@ class CRUDCurrency:
 
             return db_currency
 
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             await db_session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Database error occurred: {str(e)}",
-            )
-        except Exception as e:
-            await db_session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Unexpected error occurred: {str(e)}",
-            )
+            raise
 
 
 currency_crud = CRUDCurrency()
