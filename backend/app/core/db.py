@@ -1,5 +1,6 @@
 from typing import AsyncGenerator
 
+from loguru import logger
 from sqlalchemy import BigInteger, Identity
 from sqlalchemy.ext.asyncio import (
     AsyncAttrs,
@@ -55,9 +56,12 @@ AsyncSessionLocal = async_sessionmaker(
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
+            logger.debug("Database session created")
             yield session
-        except Exception:
+        except Exception as e:
             await session.rollback()
+            logger.debug(f"Database session rolled back: {e}")
             raise
         finally:
             await session.close()
+            logger.debug("Database session closed")

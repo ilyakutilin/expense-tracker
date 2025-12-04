@@ -1,9 +1,26 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from app.api.errors import setup_exception_handlers
+from app.api.middleware import logging_middleware
 from app.api.routers import main_router
+from app.core.logger import setup_logging
 from app.core.settings import settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    setup_logging()
+
+    logger.info("Starting up FastAPI application")
+
+    yield
+
+    logger.info("Shutting down FastAPI application")
+    logger.complete()
 
 
 def create_application() -> FastAPI:
@@ -13,7 +30,10 @@ def create_application() -> FastAPI:
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         docs_url="/docs" if settings.DEBUG else None,
         redoc_url="/redoc" if settings.DEBUG else None,
+        lifespan=lifespan,
     )
+
+    app.middleware("http")(logging_middleware)
 
     app.add_middleware(
         CORSMiddleware,

@@ -1,8 +1,11 @@
+import pathlib
 from pathlib import Path
 
 from dotenv import find_dotenv
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.utils.fs import ensure_dir
 
 APP_DIR = Path(__file__).resolve().parent.parent
 BACKEND_DIR = APP_DIR.parent
@@ -20,6 +23,21 @@ else:
 SETTINGS_MODEL_CONFIG = SettingsConfigDict(
     env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore"
 )
+
+
+class LogSettings(BaseSettings):
+    model_config = SETTINGS_MODEL_CONFIG.copy()
+    model_config["env_prefix"] = "log_"
+
+    DIR_PATH: str = "logs"
+    STREAM_LEVEL: str = "INFO"
+    FILE_LEVEL: str = "INFO"
+    FILE_ROTATION_MB: int = 10
+    FILE_RETENTION_DAYS: int = 10
+
+    @property
+    def validated_dir_path(self) -> pathlib.Path:
+        return ensure_dir(self.DIR_PATH)
 
 
 class DBSettings(BaseSettings):
@@ -48,8 +66,9 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = False
 
-    BACKEND_CORS_ORIGINS: list[str | AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: list[str] = []
 
+    log_settings: LogSettings = LogSettings()
     db_settings: DBSettings = DBSettings()
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

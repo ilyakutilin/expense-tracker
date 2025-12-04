@@ -1,3 +1,4 @@
+import pathlib
 from typing import Any, Optional
 
 from fastapi import status
@@ -98,3 +99,18 @@ class ConflictError(AppException):
 #             message=message,
 #             detail=detail,
 #         )
+
+
+class CodeError(Exception):
+    """Base exception for the errors that will not be displayed to API user."""
+
+    pass
+
+
+class PathError(CodeError):
+    """Custom exception for path-related errors."""
+
+    def __init__(self, path: str | pathlib.Path, message: str):
+        self.path = str(path)
+        self.message = message
+        super().__init__(f"PathError for '{self.path}': {self.message}")
