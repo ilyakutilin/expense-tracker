@@ -5,14 +5,14 @@ from sqlalchemy import ForeignKey, Numeric, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import BaseORM
-from app.models.mixins import CreatedUpdatedMixin
+from app.models.mixins import CreatedUpdatedMixin, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
     from app.models.operation import OperationORM
 
 
-class AccountORM(BaseORM, CreatedUpdatedMixin):
+class AccountORM(BaseORM, CreatedUpdatedMixin, SoftDeleteMixin):
     name: Mapped[str] = mapped_column(Text, unique=True, index=True)
     type_: Mapped[str] = mapped_column("type", Text, index=True)
     parent_id: Mapped[int | None] = mapped_column(
