@@ -12,6 +12,10 @@ class CurrencyCreate(BaseModel):
     symbol: str | None = Field(None, min_length=1, max_length=1)
 
 
+class CurrencyUpdate(CurrencyCreate):
+    code: str | None = Field(None, min_length=3, max_length=5)
+
+
 class CurrencyResponse(CurrencyCreate):
     id_: int = Field(serialization_alias="id")
 

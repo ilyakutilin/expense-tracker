@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,28 +8,55 @@ from app.models import CurrencyORM
 
 
 class CRUDCurrency:
-    async def currency_exists(
+    async def get_currency_by_code(
         self,
         db_session: AsyncSession,
         code: str,
-    ) -> bool:
+    ) -> CurrencyORM | None:
         query = select(CurrencyORM).where(CurrencyORM.code == code)
         result = await db_session.execute(query)
-        return result.scalar_one_or_none() is not None
+        return result.scalar_one_or_none()
+
+    async def get_currency_by_id(
+        self, db_session: AsyncSession, currency_id: int
+    ) -> CurrencyORM | None:
+        query = select(CurrencyORM).where(CurrencyORM.id_ == currency_id)
+        result = await db_session.execute(query)
+        return result.scalar_one_or_none()
 
     async def create_currency(
         self,
         db_session: AsyncSession,
-        currency_data: dict,
+        currency_data: dict[str, Any],
     ) -> CurrencyORM:
         try:
-            db_currency = CurrencyORM(**currency_data)
+            currency_orm = CurrencyORM(**currency_data)
 
-            db_session.add(db_currency)
+            db_session.add(currency_orm)
             await db_session.commit()
-            await db_session.refresh(db_currency)
+            await db_session.refresh(currency_orm)
 
-            return db_currency
+            return currency_orm
+
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise
+
+    async def update_currency(
+        self,
+        db_session: AsyncSession,
+        currency_orm: CurrencyORM,
+        currency_data: dict[str, Any],
+    ) -> CurrencyORM:
+        for field, value in currency_data.items():
+            setattr(currency_orm, field, value)
+
+        try:
+            db_session.add(currency_orm)
+            await db_session.commit()
+            await db_session.refresh(currency_orm)
+
+            return currency_orm
 
         except SQLAlchemyError:
             await db_session.rollback()

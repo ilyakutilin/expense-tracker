@@ -13,20 +13,52 @@ class CurrencyService:
         self.db = db
         self.crud = crud.currency_crud
 
+    async def _check_code_exists(self, code: str) -> None:
+        currency: models.CurrencyORM | None = await self.crud.get_currency_by_code(
+            self.db, code
+        )
+        if currency:
+            raise exc.ConflictError(
+                message=f"Currency with code '{code}' already exists",
+                detail={"code": code},
+            )
+
     async def create_currency(
         self, currency_create: schemas.CurrencyCreate
     ) -> schemas.CurrencyResponse:
-        currency_exists = await self.crud.currency_exists(self.db, currency_create.code)
-        if currency_exists:
-            raise exc.ConflictError(
-                message=f"Currency with code '{currency_create.code}' already exists",
-                detail={"code": currency_create.code},
-            )
+        await self._check_code_exists(currency_create.code)
         currency_data: dict[str, Any] = currency_create.model_dump()
         db_obj: models.CurrencyORM = await self.crud.create_currency(
             self.db, currency_data
         )
         return schemas.CurrencyResponse.model_validate(db_obj)
+
+    async def update_currency(
+        self, currency_id: int, currency_update: schemas.CurrencyUpdate
+    ) -> schemas.CurrencyResponse:
+        currency: models.CurrencyORM | None = await self.crud.get_currency_by_id(
+            self.db, currency_id
+        )
+        if not currency:
+            raise exc.NotFoundError(
+                message=f"Currency with id {currency_id} not found",
+                detail={"id": currency_id},
+            )
+
+        if currency_update.code:
+            await self._check_code_exists(currency_update.code)
+
+        currency_data: dict[str, Any] = currency_update.model_dump(exclude_unset=True)
+        if not currency_data:
+            raise exc.BadRequestError(
+                message="No fields to update", detail={"id": currency_id}
+            )
+
+        updated_currency: models.CurrencyORM = await self.crud.update_currency(
+            db_session=self.db, currency_orm=currency, currency_data=currency_data
+        )
+
+        return schemas.CurrencyResponse.model_validate(updated_currency)
 
     async def get_all_currencies(self) -> list[schemas.CurrencyResponse]:
         currencies: list[models.CurrencyORM] = await self.crud.get_all_currencies(

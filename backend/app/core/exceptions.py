@@ -22,18 +22,19 @@ class AppException(Exception):
 
 # HTTP-related exceptions (4xx, 5xx)
 
-# class NotFoundError(AppException):
-#     def __init__(self, message: str = "Resource not found", detail: Any = None):
-#         super().__init__(
-#             status_code=status.HTTP_404_NOT_FOUND, message=message, detail=detail
-#         )
+
+class NotFoundError(AppException):
+    def __init__(self, message: str = "Resource not found", detail: Any = None):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND, message=message, detail=detail
+        )
 
 
-# class BadRequestError(AppException):
-#     def __init__(self, message: str = "Bad request", detail: Any = None):
-#         super().__init__(
-#             status_code=status.HTTP_400_BAD_REQUEST, message=message, detail=detail
-#         )
+class BadRequestError(AppException):
+    def __init__(self, message: str = "Bad request", detail: Any = None):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST, message=message, detail=detail
+        )
 
 
 # class UnauthorizedError(AppException):

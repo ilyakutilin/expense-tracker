@@ -1,3 +1,3 @@
-from app.schemas.currency import CurrencyCreate, CurrencyResponse
+from app.schemas.currency import CurrencyCreate, CurrencyResponse, CurrencyUpdate
 
-__all__ = ["CurrencyCreate", "CurrencyResponse"]
+__all__ = ["CurrencyCreate", "CurrencyResponse", "CurrencyUpdate"]
