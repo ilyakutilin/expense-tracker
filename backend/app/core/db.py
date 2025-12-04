@@ -60,7 +60,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             yield session
         except Exception as e:
             await session.rollback()
-            logger.error(f"Database session rolled back: {e}")
+            logger.debug(f"Database session rolled back: {e}")
             raise
         finally:
             await session.close()
