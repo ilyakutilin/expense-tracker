@@ -2,14 +2,7 @@ import datetime as dt
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import (
-    Column,
-    Date,
-    ForeignKey,
-    Numeric,
-    Table,
-    Text,
-)
+from sqlalchemy import Column, Date, ForeignKey, Numeric, Table, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import BaseORM
@@ -43,8 +36,8 @@ class OperationORM(BaseORM, CreatedUpdatedMixin, SoftDeleteMixin):
         Numeric(precision=23, scale=8, decimal_return_scale=8, asdecimal=True)
     )
     date: Mapped[dt.date] = mapped_column(Date, index=True)
-    comment: Mapped[str] = mapped_column(Text, default="", index=True)
-    is_template: Mapped[bool] = mapped_column(default=False, index=True)
+    comment: Mapped[str | None] = mapped_column(Text, index=True)
+    is_template: Mapped[bool] = mapped_column(server_default=false(), index=True)
 
     from_acc: Mapped["AccountORM"] = relationship(
         "AccountORM",

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, func
+from sqlalchemy import Boolean, DateTime, false, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -8,12 +8,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 class CreatedUpdatedMixin:
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=func.now(),
+        server_default=func.now(),
         sort_order=98,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=func.now(),
+        server_default=func.now(),
         onupdate=func.now(),
         sort_order=99,
     )
@@ -22,7 +22,7 @@ class CreatedUpdatedMixin:
 class SoftDeleteMixin:
     is_deleted: Mapped[bool] = mapped_column(
         Boolean,
-        default=False,
+        server_default=false(),
         index=True,
         sort_order=198,
     )
