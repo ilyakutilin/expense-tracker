@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,14 +13,22 @@ class CRUDCurrency:
         db_session: AsyncSession,
         code: str,
     ) -> CurrencyORM | None:
-        query = select(CurrencyORM).where(CurrencyORM.code == code)
+        query = select(CurrencyORM).where(
+            and_(CurrencyORM.code == code, CurrencyORM.is_active)
+        )
         result = await db_session.execute(query)
         return result.scalar_one_or_none()
 
     async def get_currency_by_id(
-        self, db_session: AsyncSession, currency_id: int
+        self, db_session: AsyncSession, currency_id: int, include_deleted: bool = False
     ) -> CurrencyORM | None:
-        query = select(CurrencyORM).where(CurrencyORM.id_ == currency_id)
+        query = None
+        if include_deleted:
+            query = select(CurrencyORM).where(CurrencyORM.id_ == currency_id)
+        else:
+            query = select(CurrencyORM).where(
+                and_(CurrencyORM.id_ == currency_id, CurrencyORM.is_active)
+            )
         result = await db_session.execute(query)
         return result.scalar_one_or_none()
 
@@ -62,8 +70,22 @@ class CRUDCurrency:
             await db_session.rollback()
             raise
 
+    async def delete_currency(
+        self, db_session: AsyncSession, currency_orm: CurrencyORM, perm: bool = False
+    ) -> None:
+        try:
+            if perm:
+                await db_session.delete(currency_orm)
+            else:
+                currency_orm.is_deleted = True
+            await db_session.commit()
+
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise
+
     async def get_all_currencies(self, db_session: AsyncSession) -> list[CurrencyORM]:
-        query = select(CurrencyORM)
+        query = select(CurrencyORM).where(CurrencyORM.is_active)
         result = await db_session.execute(query)
         return list(result.scalars().all())
 

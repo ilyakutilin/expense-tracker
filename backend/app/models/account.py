@@ -1,19 +1,19 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Numeric, Text
+from sqlalchemy import ForeignKey, Index, Numeric, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import BaseORM
-from app.models.mixins import CreatedUpdatedMixin
+from app.models.mixins import CreatedUpdatedMixin, SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
     from app.models.operation import OperationORM
 
 
-class AccountORM(BaseORM, CreatedUpdatedMixin):
-    name: Mapped[str] = mapped_column(Text, unique=True, index=True)
+class AccountORM(BaseORM, CreatedUpdatedMixin, SoftDeleteMixin):
+    name: Mapped[str] = mapped_column(Text)
     type_: Mapped[str] = mapped_column("type", Text, index=True)
     parent_id: Mapped[int | None] = mapped_column(
         ForeignKey("account.id", ondelete="CASCADE"), index=True
@@ -63,4 +63,13 @@ class AccountORM(BaseORM, CreatedUpdatedMixin):
         viewonly=True,
         lazy="select",
         overlaps="from_acc,to_acc",  # Important to avoid conflicts
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_account_unique_name_active",
+            "name",
+            unique=True,
+            postgresql_where=(text("is_deleted = false")),
+        ),
     )

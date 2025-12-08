@@ -31,3 +31,12 @@ async def get_all_currencies(
     currency_service: CurrencyService = Depends(get_currency_service),
 ) -> list[CurrencyResponse]:
     return await currency_service.get_all_currencies()
+
+
+@router.delete("/{currency_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_currency(
+    currency_id: int,
+    perm: bool = False,
+    currency_service: CurrencyService = Depends(get_currency_service),
+) -> None:
+    await currency_service.delete_currency(currency_id, perm)

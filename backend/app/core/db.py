@@ -25,8 +25,6 @@ class PreBaseORM:
             always=True,
             start=1,
             increment=1,
-            nominvalue=True,
-            nomaxvalue=True,
             cycle=False,
         ),
         primary_key=True,

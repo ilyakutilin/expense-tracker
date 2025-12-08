@@ -15,8 +15,8 @@ def setup_exception_handlers(app: FastAPI):
     async def app_exception_handler(request: Request, exc: AppException):
         error_code = exc.error_code or exc.__class__.__name__
         log_msg = f"API Error: {error_code}: {exc.message}"
-        log_level = "error" if exc.status_code >= 500 else "debug"
-        logger.log(log_level, log_msg)
+        log_func = logger.error if exc.status_code >= 500 else logger.debug
+        log_func(log_msg)
         error_detail = {
             "error": {
                 "code": exc.error_code or exc.__class__.__name__,
