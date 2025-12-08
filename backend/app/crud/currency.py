@@ -66,6 +66,19 @@ class CRUDCurrency:
             await db_session.rollback()
             raise
 
+    async def soft_delete_currency(
+        self,
+        db_session: AsyncSession,
+        currency_orm: CurrencyORM,
+    ) -> None:
+        try:
+            currency_orm.is_deleted = True
+            await db_session.commit()
+
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise
+
     async def get_all_currencies(self, db_session: AsyncSession) -> list[CurrencyORM]:
         query = select(CurrencyORM).where(CurrencyORM.is_active)
         result = await db_session.execute(query)
