@@ -13,9 +13,11 @@ class CurrencyService:
         self.db = db
         self.crud = crud.currency_crud
 
-    async def _get_currency_by_id(self, currency_id: int) -> models.CurrencyORM:
+    async def _get_currency_by_id(
+        self, currency_id: int, include_deleted: bool = False
+    ) -> models.CurrencyORM:
         currency: models.CurrencyORM | None = await self.crud.get_currency_by_id(
-            self.db, currency_id
+            self.db, currency_id, include_deleted
         )
         if not currency:
             raise exc.NotFoundError(
@@ -64,10 +66,10 @@ class CurrencyService:
 
         return schemas.CurrencyResponse.model_validate(updated_currency)
 
-    async def soft_delete_currency(self, currency_id: int) -> None:
-        currency: models.CurrencyORM = await self._get_currency_by_id(currency_id)
+    async def delete_currency(self, currency_id: int, perm: bool = False) -> None:
+        currency: models.CurrencyORM = await self._get_currency_by_id(currency_id, perm)
 
-        await self.crud.soft_delete_currency(self.db, currency)
+        await self.crud.delete_currency(self.db, currency, perm)
 
     async def get_all_currencies(self) -> list[schemas.CurrencyResponse]:
         currencies: list[models.CurrencyORM] = await self.crud.get_all_currencies(

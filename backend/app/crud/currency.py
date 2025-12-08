@@ -20,11 +20,15 @@ class CRUDCurrency:
         return result.scalar_one_or_none()
 
     async def get_currency_by_id(
-        self, db_session: AsyncSession, currency_id: int
+        self, db_session: AsyncSession, currency_id: int, include_deleted: bool = False
     ) -> CurrencyORM | None:
-        query = select(CurrencyORM).where(
-            and_(CurrencyORM.id_ == currency_id, CurrencyORM.is_active)
-        )
+        query = None
+        if include_deleted:
+            query = select(CurrencyORM).where(CurrencyORM.id_ == currency_id)
+        else:
+            query = select(CurrencyORM).where(
+                and_(CurrencyORM.id_ == currency_id, CurrencyORM.is_active)
+            )
         result = await db_session.execute(query)
         return result.scalar_one_or_none()
 
@@ -66,13 +70,14 @@ class CRUDCurrency:
             await db_session.rollback()
             raise
 
-    async def soft_delete_currency(
-        self,
-        db_session: AsyncSession,
-        currency_orm: CurrencyORM,
+    async def delete_currency(
+        self, db_session: AsyncSession, currency_orm: CurrencyORM, perm: bool = False
     ) -> None:
         try:
-            currency_orm.is_deleted = True
+            if perm:
+                await db_session.delete(currency_orm)
+            else:
+                currency_orm.is_deleted = True
             await db_session.commit()
 
         except SQLAlchemyError:
