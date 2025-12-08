@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, false, func
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declarative_mixin, mapped_column
 
 
 class CreatedUpdatedMixin:
@@ -19,6 +19,7 @@ class CreatedUpdatedMixin:
     )
 
 
+@declarative_mixin
 class SoftDeleteMixin:
     is_deleted: Mapped[bool] = mapped_column(
         Boolean,
@@ -32,5 +33,9 @@ class SoftDeleteMixin:
     )
 
     @hybrid_property
-    def is_active(self) -> bool:
+    def is_active(self) -> bool:  # type: ignore
         return not self.is_deleted
+
+    @is_active.expression  # type: ignore
+    def is_active(cls):
+        return cls.is_deleted == False  # noqa: E712
