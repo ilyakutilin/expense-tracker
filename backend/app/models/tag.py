@@ -3,15 +3,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.db import BaseORM
-from app.models.mixins import CreatedUpdatedMixin, SoftDeleteMixin
+from app.models.base import BaseORM
 from app.models.operation import operation_tag
 
 if TYPE_CHECKING:
     from app.models.operation import OperationORM
 
 
-class TagORM(BaseORM, CreatedUpdatedMixin, SoftDeleteMixin):
+class TagORM(BaseORM):
     name: Mapped[str] = mapped_column(Text)
 
     operations: Mapped[list["OperationORM"]] = relationship(

@@ -3,14 +3,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.db import BaseORM
-from app.models.mixins import SoftDeleteMixin
+from app.models.base import BaseORM
 
 if TYPE_CHECKING:
     from app.models.account import AccountORM
 
 
-class CurrencyORM(BaseORM, SoftDeleteMixin):
+class CurrencyORM(BaseORM):
     code: Mapped[str] = mapped_column(Text)
     symbol: Mapped[str | None] = mapped_column(Text)
 

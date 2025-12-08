@@ -4,15 +4,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, Index, Numeric, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.db import BaseORM
-from app.models.mixins import CreatedUpdatedMixin, SoftDeleteMixin
+from app.models.base import BaseORM
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
     from app.models.operation import OperationORM
 
 
-class AccountORM(BaseORM, CreatedUpdatedMixin, SoftDeleteMixin):
+class AccountORM(BaseORM):
     name: Mapped[str] = mapped_column(Text)
     type_: Mapped[str] = mapped_column("type", Text, index=True)
     parent_id: Mapped[int | None] = mapped_column(
