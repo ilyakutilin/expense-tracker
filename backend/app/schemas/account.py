@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from app.core.settings import settings
+from app.schemas import CurrencyResponse
 
 MAX_PRECISION = settings.NUMERIC_PRECISION
 MAX_SCALE = settings.NUMERIC_SCALE
@@ -68,12 +69,20 @@ class AccountUpdate(AccountBase):
     type_: AccountType | None = Field(None, validation_alias="type")
 
 
+class AccountResponseNested(BaseModel):
+    id_: int = Field(serialization_alias="id")
+    name: str
+    type_: str = Field(serialization_alias="type")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class AccountResponse(BaseModel):
     id_: int = Field(serialization_alias="id")
     name: str
     type_: str = Field(serialization_alias="type")
-    parent_id: int | None
-    currency_id: int | None
+    parent: AccountResponseNested | None
+    currency: CurrencyResponse | None
     balance: Decimal | None
     created_at: datetime
     updated_at: datetime
