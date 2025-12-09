@@ -11,12 +11,12 @@ from app.core import exceptions as exc
 class CurrencyService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.crud = crud.currency_crud
+        self.crud: crud.CRUDCurrency = crud.currency_crud
 
     async def _get_currency_by_id(
         self, currency_id: int, include_deleted: bool = False
     ) -> models.CurrencyORM:
-        currency: models.CurrencyORM | None = await self.crud.get_currency_by_id(
+        currency: models.CurrencyORM | None = await self.crud.get_by_id(
             self.db, currency_id, include_deleted
         )
         if not currency:
@@ -41,9 +41,7 @@ class CurrencyService:
     ) -> schemas.CurrencyResponse:
         await self._check_code_exists(currency_create.code)
         currency_data: dict[str, Any] = currency_create.model_dump()
-        db_obj: models.CurrencyORM = await self.crud.create_currency(
-            self.db, currency_data
-        )
+        db_obj: models.CurrencyORM = await self.crud.create(self.db, currency_data)
         return schemas.CurrencyResponse.model_validate(db_obj)
 
     async def update_currency(
@@ -60,8 +58,8 @@ class CurrencyService:
                 message="No fields to update", detail={"id": currency_id}
             )
 
-        updated_currency: models.CurrencyORM = await self.crud.update_currency(
-            db_session=self.db, currency_orm=currency, currency_data=currency_data
+        updated_currency: models.CurrencyORM = await self.crud.update(
+            db_session=self.db, obj_orm=currency, obj_data=currency_data
         )
 
         return schemas.CurrencyResponse.model_validate(updated_currency)
@@ -69,10 +67,8 @@ class CurrencyService:
     async def delete_currency(self, currency_id: int, perm: bool = False) -> None:
         currency: models.CurrencyORM = await self._get_currency_by_id(currency_id, perm)
 
-        await self.crud.delete_currency(self.db, currency, perm)
+        await self.crud.delete(self.db, currency, perm)
 
     async def get_all_currencies(self) -> list[schemas.CurrencyResponse]:
-        currencies: list[models.CurrencyORM] = await self.crud.get_all_currencies(
-            self.db
-        )
+        currencies: list[models.CurrencyORM] = await self.crud.get_all(self.db)
         return [schemas.CurrencyResponse.model_validate(c) for c in currencies]

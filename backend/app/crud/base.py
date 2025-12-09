@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from sqlalchemy import and_, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -6,14 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base import BaseORM
 
+ModelType = TypeVar("ModelType", bound="BaseORM")
 
-class CRUDBase:
-    def __init__(self, model: type[BaseORM]) -> None:
+
+class CRUDBase(Generic[ModelType]):
+    def __init__(self, model: type[ModelType]) -> None:
         self.model = model
 
     async def get_by_id(
         self, db_session: AsyncSession, obj_id: int, include_deleted: bool = False
-    ) -> BaseORM | None:
+    ) -> ModelType | None:
         query = None
         if include_deleted:
             query = select(self.model).where(self.model.id_ == obj_id)
@@ -24,7 +26,7 @@ class CRUDBase:
         result = await db_session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_all(self, db_session: AsyncSession) -> list[BaseORM]:
+    async def get_all(self, db_session: AsyncSession) -> list[ModelType]:
         query = select(self.model).where(self.model.is_active)
         result = await db_session.execute(query)
         return list(result.scalars().all())
@@ -33,7 +35,7 @@ class CRUDBase:
         self,
         db_session: AsyncSession,
         obj_data: dict[str, Any],
-    ) -> BaseORM:
+    ) -> ModelType:
         try:
             obj_orm = self.model(**obj_data)
 
@@ -50,9 +52,9 @@ class CRUDBase:
     async def update(
         self,
         db_session: AsyncSession,
-        obj_orm: BaseORM,
+        obj_orm: ModelType,
         obj_data: dict[str, Any],
-    ) -> BaseORM:
+    ) -> ModelType:
         for field, value in obj_data.items():
             setattr(obj_orm, field, value)
 
@@ -68,7 +70,7 @@ class CRUDBase:
             raise
 
     async def delete(
-        self, db_session: AsyncSession, obj_orm: BaseORM, perm: bool = False
+        self, db_session: AsyncSession, obj_orm: ModelType, perm: bool = False
     ) -> None:
         try:
             if perm:

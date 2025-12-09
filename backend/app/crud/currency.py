@@ -5,7 +5,12 @@ from app.crud.base import CRUDBase
 from app.models import CurrencyORM
 
 
-class CRUDCurrency(CRUDBase):
+class CRUDCurrency(CRUDBase[CurrencyORM]):
+    # Note: No __init__ needed if you are just relying on the base methods.
+    # If you *do* add an __init__, you still need to call the parent __init__
+    # and pass the specific model:
+    # def __init__(self) -> None:
+    #     super().__init__(model=CurrencyORM)
     async def get_currency_by_code(
         self,
         db_session: AsyncSession,
