@@ -68,6 +68,9 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: list[str] = []
 
+    NUMERIC_PRECISION: int = 23
+    NUMERIC_SCALE: int = 8
+
     log_settings: LogSettings = LogSettings()
     db_settings: DBSettings = DBSettings()
 
