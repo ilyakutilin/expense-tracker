@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Date, ForeignKey, Numeric, Table, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.db import BaseORM
-from app.models.mixins import CreatedUpdatedMixin, SoftDeleteMixin
+from app.models.base import BaseORM
 
 if TYPE_CHECKING:
     from app.models.account import AccountORM
@@ -21,7 +20,7 @@ operation_tag = Table(
 )
 
 
-class OperationORM(BaseORM, CreatedUpdatedMixin, SoftDeleteMixin):
+class OperationORM(BaseORM):
     type_: Mapped[str] = mapped_column("type", Text, index=True)
     from_acc_id: Mapped[int] = mapped_column(
         ForeignKey("account.id", ondelete="RESTRICT"), index=True
