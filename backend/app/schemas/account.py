@@ -69,7 +69,7 @@ class AccountUpdate(AccountBase):
     type_: AccountType | None = Field(None, validation_alias="type")
 
 
-class AccountResponseNested(BaseModel):
+class AccountResponseBase(BaseModel):
     id_: int = Field(serialization_alias="id")
     name: str
     type_: str = Field(serialization_alias="type")
@@ -77,11 +77,8 @@ class AccountResponseNested(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AccountResponse(BaseModel):
-    id_: int = Field(serialization_alias="id")
-    name: str
-    type_: str = Field(serialization_alias="type")
-    parent: AccountResponseNested | None
+class AccountResponse(AccountResponseBase):
+    parent: AccountResponseBase | None
     currency: CurrencyResponse | None
     balance: Decimal | None
     created_at: datetime
@@ -96,8 +93,8 @@ class AccountResponse(BaseModel):
             "id",
             "name",
             "type",
-            "parent_id",
-            "currency_id",
+            "parent",
+            "currency",
             "balance",
             "created_at",
             "updated_at",
