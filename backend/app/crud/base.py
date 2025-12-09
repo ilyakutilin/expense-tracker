@@ -13,6 +13,19 @@ class CRUDBase(Generic[ModelType]):
     def __init__(self, model: type[ModelType]) -> None:
         self.model = model
 
+    async def exists(
+        self, db_session: AsyncSession, obj_id: int, include_deleted: bool = False
+    ) -> bool:
+        stmt = None
+        if include_deleted:
+            stmt = select(self.model.id_).where(self.model.id_ == obj_id)
+        else:
+            stmt = select(self.model.id_).where(
+                and_(self.model.id_ == obj_id, self.model.is_active)
+            )
+        result = await db_session.scalar(stmt)
+        return result is not None
+
     async def get_by_id(
         self, db_session: AsyncSession, obj_id: int, include_deleted: bool = False
     ) -> ModelType | None:

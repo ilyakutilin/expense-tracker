@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
@@ -34,10 +36,43 @@ class AccountService:
                 detail={"name": name},
             )
 
+    async def _check_referential_integrity(
+        self, parent_id: int | None, currency_id: int | None
+    ) -> None:
+        msg_txt = ""
+        detail: dict[str, int] = {}
+        if parent_id:
+            parent_exists = await self.crud.exists(self.db, parent_id)
+            if not parent_exists:
+                detail["parent_id"] = parent_id
+                msg_txt = f"Parent account with ID {parent_id} does not exist."
+
+        if currency_id:
+            currency_exists = await self.crud.exists(self.db, currency_id)
+            if not currency_exists:
+                detail["currency_id"] = currency_id
+                msg_txt = (
+                    f"Currency with ID {currency_id} does not exist."
+                    if not msg_txt
+                    else (
+                        f"Parent account with ID {parent_id} and currency with ID "
+                        f"{currency_id} do not exist."
+                    )
+                )
+
+        if msg_txt:
+            raise exc.RelatedResourceNotFoundError(message=msg_txt, detail=detail)
+
     async def create_account(
         self, account_create: schemas.AccountCreate
     ) -> schemas.AccountResponse:
-        pass
+        await self._check_name_exists(account_create.name)
+        await self._check_referential_integrity(
+            account_create.parent_id, account_create.currency_id
+        )
+        currency_data: dict[str, Any] = account_create.model_dump()
+        account_orm: models.AccountORM = await self.crud.create(self.db, currency_data)
+        return schemas.AccountResponse.model_validate(account_orm)
 
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
         pass
