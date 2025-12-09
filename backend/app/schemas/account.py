@@ -6,9 +6,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    SerializerFunctionWrapHandler,
     field_validator,
-    model_serializer,
 )
 
 from app.core.settings import settings
@@ -86,17 +84,17 @@ class AccountResponse(AccountResponseBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    @model_serializer(mode="wrap")
-    def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, int | str]:
-        serialized = handler(self)
-        key_order = [
-            "id",
-            "name",
-            "type",
-            "parent",
-            "currency",
-            "balance",
-            "created_at",
-            "updated_at",
-        ]
-        return {k: serialized[k] for k in key_order}
+    # @model_serializer(mode="wrap")
+    # def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, int | str]:
+    #     serialized = handler(self)
+    #     key_order = [
+    #         "id",
+    #         "name",
+    #         "type",
+    #         "parent",
+    #         "currency",
+    #         "balance",
+    #         "created_at",
+    #         "updated_at",
+    #     ]
+    #     return {k: serialized[k] for k in key_order}
