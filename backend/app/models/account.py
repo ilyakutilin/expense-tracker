@@ -36,6 +36,7 @@ class AccountORM(BaseORM):
         remote_side="AccountORM.id_",
         back_populates="children",
         foreign_keys=[parent_id],
+        lazy="joined",
     )
 
     children: Mapped[list["AccountORM"]] = relationship(
@@ -48,6 +49,7 @@ class AccountORM(BaseORM):
     currency: Mapped["CurrencyORM"] = relationship(
         "CurrencyORM",
         back_populates="accounts",
+        lazy="joined",
     )
 
     operations_from: Mapped[list["OperationORM"]] = relationship(

@@ -10,7 +10,7 @@ from pydantic import (
 )
 
 from app.core.settings import settings
-from app.schemas import CurrencyResponse
+from app.schemas.currency import CurrencyResponse
 
 MAX_PRECISION = settings.NUMERIC_PRECISION
 MAX_SCALE = settings.NUMERIC_SCALE
@@ -23,8 +23,8 @@ class AccountType(str, Enum):
 
 
 class AccountBase(BaseModel):
-    parent_id: int | None
-    currency_id: int | None
+    parent_id: int | None = Field(None, ge=1)
+    currency_id: int | None = Field(None, ge=1)
     balance: Decimal | None = Field(Decimal("0.00"))
 
     @field_validator("balance", mode="after")

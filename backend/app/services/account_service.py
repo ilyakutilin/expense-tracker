@@ -4,14 +4,16 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 
-from app import crud, models, schemas
+from app import crud, models
 from app.core import exceptions as exc
+from app.schemas import account as schemas
 
 
 class AccountService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.crud: crud.CRUDAccount = crud.account_crud
+        self.currency_crud: crud.CRUDCurrency = crud.currency_crud
 
     async def _get_account_by_id(
         self, account_id: int, include_deleted: bool = False
@@ -48,7 +50,7 @@ class AccountService:
                 msg_txt = f"Parent account with ID {parent_id} does not exist."
 
         if currency_id:
-            currency_exists = await self.crud.exists(self.db, currency_id)
+            currency_exists = await self.currency_crud.exists(self.db, currency_id)
             if not currency_exists:
                 detail["currency_id"] = currency_id
                 msg_txt = (
