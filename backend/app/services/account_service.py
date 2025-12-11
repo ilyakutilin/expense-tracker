@@ -15,9 +15,9 @@ class AccountService:
         self.crud: crud.CRUDAccount = crud.account_crud
         self.currency_crud: crud.CRUDCurrency = crud.currency_crud
 
-    async def _get_account_by_id(
+    async def get_account_by_id(
         self, account_id: int, include_deleted: bool = False
-    ) -> models.AccountORM:
+    ) -> schemas.AccountResponse:
         account_orm: models.AccountORM | None = await self.crud.get_by_id(
             self.db, account_id, include_deleted
         )
@@ -26,7 +26,7 @@ class AccountService:
                 message=f"Account with id {account_id} not found",
                 detail={"id": account_id},
             )
-        return account_orm
+        return schemas.AccountResponse.model_validate(account_orm)
 
     async def _check_name_exists(self, name: str) -> None:
         account_orm: models.AccountORM | None = await self.crud.get_account_by_name(
