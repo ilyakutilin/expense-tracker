@@ -11,6 +11,7 @@ from pydantic import (
 
 from app.core.settings import settings
 from app.schemas.currency import CurrencyResponse
+from app.utils.fmt import format_monetary_decimal
 
 MAX_PRECISION = settings.NUMERIC_PRECISION
 MAX_SCALE = settings.NUMERIC_SCALE
@@ -29,7 +30,7 @@ class AccountBase(BaseModel):
 
     @field_validator("balance", mode="after")
     @classmethod
-    def validate_balance_precision_and_scale(cls, v: Decimal):
+    def validate_balance_precision_and_scale(cls, v: Decimal) -> Decimal:
         _, digits, exponent = v.as_tuple()
 
         total_digits = len(digits)
@@ -82,7 +83,10 @@ class AccountResponse(AccountResponseBase):
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={Decimal: format_monetary_decimal},
+    )
 
     # @model_serializer(mode="wrap")
     # def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, int | str]:
