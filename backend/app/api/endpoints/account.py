@@ -18,7 +18,7 @@ async def get_one_account(
 
 
 @router.post("/", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
-async def create_new_currency(
+async def create_new_account(
     account_data: AccountCreate,
     account_service: AccountService = Depends(get_account_service),
 ) -> AccountResponse:
