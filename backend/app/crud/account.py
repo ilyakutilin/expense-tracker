@@ -19,22 +19,6 @@ class CRUDAccount(CRUDBase[AccountORM]):
             ),
         )
 
-    async def get_by_id(
-        self, db_session: AsyncSession, obj_id: int, include_deleted: bool = False
-    ) -> AccountORM | None:
-        stmt = select(self.model).where(self.model.id_ == obj_id)
-        if not include_deleted:
-            stmt = stmt.where(self.model.is_active)
-        stmt = stmt.options(*self._get_options())
-        result = await db_session.execute(stmt)
-        return result.unique().scalar_one_or_none()
-
-    async def get_all(self, db_session: AsyncSession) -> list[AccountORM]:
-        stmt = select(self.model).where(self.model.is_active)
-        stmt = stmt.options(*self._get_options())
-        result = await db_session.execute(stmt)
-        return list(result.scalars().all())
-
     async def get_account_by_name(
         self,
         db_session: AsyncSession,
