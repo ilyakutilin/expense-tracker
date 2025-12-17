@@ -17,6 +17,13 @@ async def get_one_account(
     return await account_service.get_account_by_id(account_id)
 
 
+@router.get("/", response_model=list[AccountResponse], status_code=status.HTTP_200_OK)
+async def get_all_currencies(
+    account_service: AccountService = Depends(get_account_service),
+) -> list[AccountResponse]:
+    return await account_service.get_all_accounts()
+
+
 @router.post("/", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_account(
     account_data: AccountCreate,

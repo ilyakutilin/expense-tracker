@@ -80,6 +80,10 @@ class AccountService:
         )
         return schemas.AccountResponse.model_validate(account_orm)
 
+    async def get_all_accounts(self) -> list[schemas.AccountResponse]:
+        accounts: list[models.AccountORM] = await self.crud.get_all(self.db)
+        return [schemas.AccountResponse.model_validate(a) for a in accounts]
+
     async def create_account(
         self, account_create: schemas.AccountCreate
     ) -> schemas.AccountResponse:
@@ -117,7 +121,4 @@ class AccountService:
         return await self.get_account_by_id(updated_account.id_)
 
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
-        pass
-
-    async def get_all_accounts(self) -> list[schemas.AccountResponse]:
         pass
