@@ -18,7 +18,7 @@ async def get_one_account(
 
 
 @router.get("/", response_model=list[AccountResponse], status_code=status.HTTP_200_OK)
-async def get_all_currencies(
+async def get_all_accounts(
     account_service: AccountService = Depends(get_account_service),
 ) -> list[AccountResponse]:
     return await account_service.get_all_accounts()
@@ -35,9 +35,18 @@ async def create_new_account(
 @router.patch(
     "/{account_id}", response_model=AccountResponse, status_code=status.HTTP_200_OK
 )
-async def update_currency(
+async def update_account(
     account_id: int,
     account_update: AccountUpdate,
     account_service: AccountService = Depends(get_account_service),
 ) -> AccountResponse:
     return await account_service.update_account(account_id, account_update)
+
+
+@router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_account(
+    account_id: int,
+    perm: bool = False,
+    account_service: AccountService = Depends(get_account_service),
+) -> None:
+    await account_service.delete_account(account_id, perm)

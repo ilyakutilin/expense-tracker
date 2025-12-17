@@ -121,4 +121,6 @@ class AccountService:
         return await self.get_account_by_id(updated_account.id_)
 
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
-        pass
+        account: models.AccountORM = await self._get_account_orm_by_id(account_id, perm)
+
+        await self.crud.delete(self.db, account, perm)
