@@ -1,3 +1,4 @@
+import math
 from typing import Any
 
 from sqlalchemy.ext.asyncio import (
@@ -6,7 +7,8 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud, models
 from app.core import exceptions as exc
-from app.schemas import account as schemas
+from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
+from app.schemas.pagination import PaginatedResponse
 
 
 class AccountService:
@@ -74,30 +76,39 @@ class AccountService:
 
     async def get_account_by_id(
         self, account_id: int, include_deleted: bool = False
-    ) -> schemas.AccountResponse:
+    ) -> AccountResponse:
         account_orm: models.AccountORM = await self._get_account_orm_by_id(
             account_id, include_deleted
         )
-        return schemas.AccountResponse.model_validate(account_orm)
+        return AccountResponse.model_validate(account_orm)
 
-    async def get_all_accounts(self) -> list[schemas.AccountResponse]:
-        accounts: list[models.AccountORM] = await self.crud.get_all(self.db)
-        return [schemas.AccountResponse.model_validate(a) for a in accounts]
+    async def get_all_accounts(
+        self, page: int = 1, page_size: int = 20
+    ) -> PaginatedResponse[AccountResponse]:
+        accounts_orm, total = await self.crud.get_all_paginated(
+            self.db, page, page_size
+        )
+        accounts = [AccountResponse.model_validate(a) for a in accounts_orm]
+        return PaginatedResponse(
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=math.ceil(total / page_size) if total > 0 else 0,
+            items=accounts,
+        )
 
-    async def create_account(
-        self, account_create: schemas.AccountCreate
-    ) -> schemas.AccountResponse:
+    async def create_account(self, account_create: AccountCreate) -> AccountResponse:
         await self._check_name_exists(account_create.name)
         await self._check_referential_integrity(
             account_create.parent_id, account_create.currency_id
         )
         currency_data: dict[str, Any] = account_create.model_dump()
         account_orm: models.AccountORM = await self.crud.create(self.db, currency_data)
-        return schemas.AccountResponse.model_validate(account_orm)
+        return AccountResponse.model_validate(account_orm)
 
     async def update_account(
-        self, account_id: int, account_update: schemas.AccountUpdate
-    ) -> schemas.AccountResponse:
+        self, account_id: int, account_update: AccountUpdate
+    ) -> AccountResponse:
         account_orm: models.AccountORM = await self._get_account_orm_by_id(account_id)
 
         if account_update.name:

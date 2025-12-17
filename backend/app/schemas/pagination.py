@@ -2,9 +2,7 @@ from typing import Generic, List, TypeVar
 
 from pydantic import BaseModel, Field
 
-from app.models.base import BaseORM
-
-ModelType = TypeVar("ModelType", bound="BaseORM")
+T = TypeVar("T")
 
 
 class PaginationParams(BaseModel):
@@ -12,9 +10,9 @@ class PaginationParams(BaseModel):
     page_size: int = Field(default=20, ge=1, le=100, description="Items per page")
 
 
-class PaginatedResponse(BaseModel, Generic[ModelType]):
-    items: List[ModelType]
+class PaginatedResponse(BaseModel, Generic[T]):
     total: int
     page: int
     page_size: int
     total_pages: int
+    items: List[T]

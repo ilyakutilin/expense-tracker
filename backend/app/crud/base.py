@@ -1,6 +1,6 @@
 from typing import Any, Generic, TypeVar
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.strategy_options import _AbstractLoad
@@ -42,6 +42,28 @@ class CRUDBase(Generic[ModelType]):
         stmt = stmt.options(*self._get_options())
         result = await db_session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_all_paginated(
+        self, db_session: AsyncSession, page: int = 1, page_size: int = 20
+    ) -> tuple[list[ModelType], int]:
+        offset = (page - 1) * page_size
+
+        count_query = select(func.count()).select_from(self.model)
+        total_result = await db_session.execute(count_query)
+        total = total_result.scalar_one()
+
+        stmt = (
+            select(self.model)
+            .where(self.model.is_active)
+            .offset(offset)
+            .limit(page_size)
+            .order_by(self.model.id_)
+            .options(*self._get_options())
+        )
+        result = await db_session.execute(stmt)
+        accounts = list(result.scalars().all())
+
+        return accounts, total
 
     async def create(
         self,

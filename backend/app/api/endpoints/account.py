@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_account_service
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
+from app.schemas.pagination import PaginatedResponse
 from app.services import AccountService
 
 router = APIRouter()
@@ -17,11 +18,17 @@ async def get_one_account(
     return await account_service.get_account_by_id(account_id)
 
 
-@router.get("/", response_model=list[AccountResponse], status_code=status.HTTP_200_OK)
+@router.get(
+    "/",
+    response_model=PaginatedResponse[AccountResponse],
+    status_code=status.HTTP_200_OK,
+)
 async def get_all_accounts(
     account_service: AccountService = Depends(get_account_service),
-) -> list[AccountResponse]:
-    return await account_service.get_all_accounts()
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
+) -> PaginatedResponse[AccountResponse]:
+    return await account_service.get_all_accounts(page, page_size)
 
 
 @router.post("/", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
