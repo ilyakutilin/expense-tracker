@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Index, Numeric, Text, text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Numeric, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.settings import settings
@@ -77,4 +77,5 @@ class AccountORM(BaseORM):
             unique=True,
             postgresql_where=(text("is_deleted = false")),
         ),
+        CheckConstraint("id != parent_id", name="account_parent_no_self_reference"),
     )
