@@ -1,5 +1,6 @@
 from typing import Any, Generic, TypeVar
 
+from fastapi_filter.contrib.sqlalchemy import Filter
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,29 +38,34 @@ class CRUDBase(Generic[ModelType]):
         result = await db_session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_all(self, db_session: AsyncSession) -> list[ModelType]:
-        stmt = select(self.model).where(self.model.is_active)
-        stmt = stmt.options(*self._get_options())
-        result = await db_session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def get_all_paginated(
-        self, db_session: AsyncSession, page: int = 1, page_size: int = 20
+    async def get_all(
+        self,
+        db_session: AsyncSession,
+        include_deleted: bool = False,
+        filter_: Filter | None = None,
+        page: int = 1,
+        page_size: int = 20,
     ) -> tuple[list[ModelType], int]:
+        stmt = select(self.model)
+
+        if not include_deleted:
+            stmt = stmt.where(self.model.is_active)
+
+        if filter_:
+            stmt = filter_.filter(stmt)
+            stmt = filter_.sort(stmt)
+
+        stmt = stmt.options(*self._get_options())
+
+        total: int | None = None
         offset = (page - 1) * page_size
 
         count_query = select(func.count()).select_from(self.model)
         total_result = await db_session.execute(count_query)
         total = total_result.scalar_one()
 
-        stmt = (
-            select(self.model)
-            .where(self.model.is_active)
-            .offset(offset)
-            .limit(page_size)
-            .order_by(self.model.id_)
-            .options(*self._get_options())
-        )
+        stmt = stmt.offset(offset).limit(page_size)
+
         result = await db_session.execute(stmt)
         accounts = list(result.scalars().all())
 
