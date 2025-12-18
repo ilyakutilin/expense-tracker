@@ -1,6 +1,7 @@
 import math
 from typing import Any
 
+from fastapi_filter.contrib.sqlalchemy import Filter
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
@@ -83,10 +84,18 @@ class AccountService:
         return AccountResponse.model_validate(account_orm)
 
     async def get_all_accounts(
-        self, page: int = 1, page_size: int = 20
+        self,
+        include_deleted: bool = False,
+        filter_: Filter | None = None,
+        page: int = 1,
+        page_size: int = 20,
     ) -> PaginatedResponse[AccountResponse]:
-        accounts_orm, total = await self.crud.get_all_paginated(
-            self.db, page, page_size
+        accounts_orm, total = await self.crud.get_all(
+            db_session=self.db,
+            include_deleted=include_deleted,
+            filter_=filter_,
+            page=page,
+            page_size=page_size,
         )
         accounts = [AccountResponse.model_validate(a) for a in accounts_orm]
         return PaginatedResponse(
