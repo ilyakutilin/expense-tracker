@@ -1,13 +1,12 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from fastapi_filter.contrib.sqlalchemy import Filter
 from pydantic import Field, field_validator
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Numeric, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.settings import settings
-from app.models.base import BaseORM
+from app.models.base import BaseFilter, BaseORM
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
@@ -83,14 +82,14 @@ class AccountORM(BaseORM):
     )
 
 
-class AccountFilter(Filter):
+class AccountFilter(BaseFilter):
     type_: str | None = Field(None, alias="type")
     type__in: list[str] | None = None
 
     order_by: list[str] = ["id"]
     search: str | None = None
 
-    class Constants(Filter.Constants):
+    class Constants(BaseFilter.Constants):
         model = AccountORM
         search_model_fields = ["name"]
 
