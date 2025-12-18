@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 
 from app.api.deps import get_currency_service
-from app.schemas import CurrencyCreate, CurrencyResponse, CurrencyUpdate
+from app.schemas.currency import CurrencyCreate, CurrencyResponse, CurrencyUpdate
 from app.services.currency_service import CurrencyService
 
 router = APIRouter()

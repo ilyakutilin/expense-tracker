@@ -59,6 +59,17 @@ class ConflictError(AppException):
         )
 
 
+class ReferentialIntergrityError(AppException):
+    def __init__(
+        self, message: str = "Referential integrity violation", detail: Any = None
+    ):
+        super().__init__(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            message=message,
+            detail=detail,
+        )
+
+
 # class ValidationError(AppException):
 #     def __init__(self, message: str = "Validation error", detail: Any = None):
 #         super().__init__(

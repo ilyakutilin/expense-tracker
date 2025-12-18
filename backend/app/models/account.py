@@ -1,9 +1,10 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Index, Numeric, Text, text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Numeric, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.settings import settings
 from app.models.base import BaseORM
 
 if TYPE_CHECKING:
@@ -21,7 +22,12 @@ class AccountORM(BaseORM):
         ForeignKey("currency.id", ondelete="RESTRICT"), index=True
     )
     balance: Mapped[Decimal | None] = mapped_column(
-        Numeric(precision=23, scale=8, decimal_return_scale=8, asdecimal=True),
+        Numeric(
+            precision=settings.NUMERIC_PRECISION,
+            scale=settings.NUMERIC_SCALE,
+            decimal_return_scale=settings.NUMERIC_SCALE,
+            asdecimal=True,
+        ),
         default=Decimal("0.0"),
     )
 
@@ -71,4 +77,5 @@ class AccountORM(BaseORM):
             unique=True,
             postgresql_where=(text("is_deleted = false")),
         ),
+        CheckConstraint("id != parent_id", name="account_parent_no_self_reference"),
     )

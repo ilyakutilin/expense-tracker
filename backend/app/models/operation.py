@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Date, ForeignKey, Numeric, Table, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.settings import settings
 from app.models.base import BaseORM
 
 if TYPE_CHECKING:
@@ -29,10 +30,20 @@ class OperationORM(BaseORM):
         ForeignKey("account.id", ondelete="RESTRICT"), index=True
     )
     from_amount: Mapped[Decimal] = mapped_column(
-        Numeric(precision=23, scale=8, decimal_return_scale=8, asdecimal=True)
+        Numeric(
+            precision=settings.NUMERIC_PRECISION,
+            scale=settings.NUMERIC_SCALE,
+            decimal_return_scale=settings.NUMERIC_SCALE,
+            asdecimal=True,
+        )
     )
     to_amount: Mapped[Decimal] = mapped_column(
-        Numeric(precision=23, scale=8, decimal_return_scale=8, asdecimal=True)
+        Numeric(
+            precision=settings.NUMERIC_PRECISION,
+            scale=settings.NUMERIC_SCALE,
+            decimal_return_scale=settings.NUMERIC_SCALE,
+            asdecimal=True,
+        )
     )
     date: Mapped[dt.date] = mapped_column(Date, index=True)
     comment: Mapped[str | None] = mapped_column(Text, index=True)

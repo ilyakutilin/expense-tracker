@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 
-from app import crud, models, schemas
+from app import crud, models
 from app.core import exceptions as exc
+from app.schemas import currency as schemas
 
 
 class CurrencyService:
