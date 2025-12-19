@@ -43,13 +43,13 @@ async def create_new_tag(
     return await tag_service.create_tag(tag_data)
 
 
-# @router.patch("/{tag_id}", response_model=TagResponse, status_code=status.HTTP_200_OK)
-# async def update_tag(
-#     tag_id: int,
-#     tag_update: TagCreateUpdate,
-#     tag_service: TagService = Depends(get_tag_service),
-# ) -> TagResponse:
-#     return await tag_service.update_tag(tag_id, tag_update)
+@router.patch("/{tag_id}", response_model=TagResponse, status_code=status.HTTP_200_OK)
+async def update_tag(
+    tag_id: int,
+    tag_update: TagCreateUpdate,
+    tag_service: TagService = Depends(get_tag_service),
+) -> TagResponse:
+    return await tag_service.update_tag(tag_id, tag_update)
 
 
 # @router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)

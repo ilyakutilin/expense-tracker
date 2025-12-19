@@ -1,5 +1,4 @@
 import math
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import (
@@ -79,13 +78,16 @@ class TagService:
         return TagResponse.model_validate(tag_orm)
 
     async def update_tag(self, tag_id: int, tag_update: TagCreateUpdate) -> TagResponse:
-        return TagResponse(
-            id_=0,
-            name="",
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-            operations_count=0,
+        tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id)
+
+        await self._check_name_exists(tag_update.name)
+
+        tag_data: dict[str, Any] = tag_update.model_dump()
+
+        updated_tag: TagORM = await self.crud.update(
+            db_session=self.db, obj_orm=tag_orm, obj_data=tag_data
         )
+        return await self.get_tag_by_id(updated_tag.id_)
 
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
         pass
