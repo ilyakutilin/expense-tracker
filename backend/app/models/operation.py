@@ -6,7 +6,7 @@ from sqlalchemy import Column, Date, ForeignKey, Numeric, Table, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.settings import settings
-from app.models.base import BaseORM
+from app.models.base import BaseFilter, BaseORM
 
 if TYPE_CHECKING:
     from app.models.account import AccountORM
@@ -67,3 +67,14 @@ class OperationORM(BaseORM):
         back_populates="operations",
         lazy="selectin",
     )
+
+
+class OperationFilter(BaseFilter):
+    order_by: list[str] = ["id"]
+    search: str | None = None
+
+    class Constants(BaseFilter.Constants):
+        model = OperationORM
+        search_model_fields = ["comment"]
+
+    # TODO: Complete OperationFilter
