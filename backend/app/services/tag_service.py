@@ -19,7 +19,11 @@ class TagService:
         self, tag_id: int, include_deleted: bool = False
     ) -> TagResponse:
         return TagResponse(
-            id_=0, name="", created_at=datetime.now(), updated_at=datetime.now()
+            id_=0,
+            name="",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            operations_count=0,
         )
 
     async def get_all_tags(
@@ -39,12 +43,20 @@ class TagService:
 
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
         return TagResponse(
-            id_=0, name="", created_at=datetime.now(), updated_at=datetime.now()
+            id_=0,
+            name="",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            operations_count=0,
         )
 
     async def update_tag(self, tag_id: int, tag_update: TagCreateUpdate) -> TagResponse:
         return TagResponse(
-            id_=0, name="", created_at=datetime.now(), updated_at=datetime.now()
+            id_=0,
+            name="",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+            operations_count=0,
         )
 
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
