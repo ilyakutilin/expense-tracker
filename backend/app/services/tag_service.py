@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.models.base import BaseFilter
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.tag import TagCreateUpdate, TagResponse
 
 
@@ -27,8 +28,14 @@ class TagService:
         filter_: BaseFilter | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> list[TagResponse]:
-        return []
+    ) -> PaginatedResponse[TagResponse]:
+        return PaginatedResponse(
+            total=0,
+            page=0,
+            page_size=0,
+            total_pages=0,
+            items=[],
+        )
 
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
         return TagResponse(
