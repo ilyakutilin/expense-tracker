@@ -30,16 +30,24 @@ class TagService:
                 detail={"id": existing_id, "name": name},
             )
 
+    async def _get_tag_orm_by_id(
+        self, tag_id: int, include_deleted: bool = False
+    ) -> TagORM:
+        tag_orm: TagORM | None = await self.crud.get_by_id(
+            self.db, tag_id, include_deleted
+        )
+        if not tag_orm:
+            raise exc.NotFoundError(
+                message=f"Tag with id {tag_id} not found",
+                detail={"id": tag_id},
+            )
+        return tag_orm
+
     async def get_tag_by_id(
         self, tag_id: int, include_deleted: bool = False
     ) -> TagResponse:
-        return TagResponse(
-            id_=0,
-            name="",
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-            operations_count=0,
-        )
+        tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, include_deleted)
+        return TagResponse.model_validate(tag_orm)
 
     async def get_all_tags(
         self,

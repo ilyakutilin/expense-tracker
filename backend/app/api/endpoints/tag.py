@@ -10,12 +10,12 @@ from app.services import TagService
 router = APIRouter()
 
 
-# @router.get("/{tag_id}", response_model=TagResponse, status_code=status.HTTP_200_OK)
-# async def get_one_tag(
-#     tag_id: int,
-#     tag_service: TagService = Depends(get_tag_service),
-# ) -> TagResponse:
-#     return await tag_service.get_tag_by_id(tag_id)
+@router.get("/{tag_id}", response_model=TagResponse, status_code=status.HTTP_200_OK)
+async def get_one_tag(
+    tag_id: int,
+    tag_service: TagService = Depends(get_tag_service),
+) -> TagResponse:
+    return await tag_service.get_tag_by_id(tag_id)
 
 
 @router.get(
