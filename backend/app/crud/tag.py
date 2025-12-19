@@ -16,4 +16,4 @@ class CRUDTag(CRUDBase[TagORM]):
         return result.scalar_one_or_none()
 
 
-currency_crud = CRUDTag(TagORM)
+tag_crud = CRUDTag(TagORM)
