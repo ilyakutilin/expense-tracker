@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Index, Text, text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Index, Text, func, select, text
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.models.base import BaseORM
 from app.models.operation import operation_tag
@@ -17,6 +17,13 @@ class TagORM(BaseORM):
         "OperationORM",
         secondary=operation_tag,
         back_populates="tags",
+    )
+
+    operations_count: Mapped[int] = column_property(
+        select(func.count(operation_tag.c.tag_id))
+        .where(operation_tag.c.tag_id == BaseORM.id_)
+        .correlate_except(operation_tag)
+        .scalar_subquery()
     )
 
     __table_args__ = (
