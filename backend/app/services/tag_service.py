@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 from typing import Any
 
@@ -7,8 +8,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
-from app.models.base import BaseFilter
-from app.models.tag import TagORM
+from app.models.tag import TagFilter, TagORM
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.tag import TagCreateUpdate, TagResponse
 
@@ -44,16 +44,24 @@ class TagService:
     async def get_all_tags(
         self,
         include_deleted: bool = False,
-        filter_: BaseFilter | None = None,
+        filter_: TagFilter | None = None,
         page: int = 1,
         page_size: int = 20,
     ) -> PaginatedResponse[TagResponse]:
+        tags_orm, total = await self.crud.get_all(
+            db_session=self.db,
+            include_deleted=include_deleted,
+            filter_=filter_,
+            page=page,
+            page_size=page_size,
+        )
+        tags = [TagResponse.model_validate(t) for t in tags_orm]
         return PaginatedResponse(
-            total=0,
-            page=0,
-            page_size=0,
-            total_pages=0,
-            items=[],
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=math.ceil(total / page_size) if total > 0 else 0,
+            items=tags,
         )
 
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:

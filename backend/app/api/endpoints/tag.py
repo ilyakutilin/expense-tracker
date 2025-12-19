@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
+from fastapi_filter import FilterDepends
 
-# from fastapi import Query
-# from fastapi_filter import FilterDepends
 from app.api.deps import get_tag_service
-
-# from app.schemas.pagination import PaginatedResponse
+from app.models.tag import TagFilter
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.tag import TagCreateUpdate, TagResponse
 from app.services import TagService
 
@@ -19,25 +18,21 @@ router = APIRouter()
 #     return await tag_service.get_tag_by_id(tag_id)
 
 
-# @router.get(
-#     "/",
-#     response_model=PaginatedResponse[TagResponse],
-#     status_code=status.HTTP_200_OK,
-# )
-# async def get_all_tags(
-#     tag_service: TagService = Depends(get_tag_service),
-#     tag_filter: TagFilter = FilterDepends(TagFilter, by_alias=True),
-#     incl_deleted: bool = Query(default=False, description="Include tags in trash"),
-#     page: int = Query(default=1, ge=1, description="Page number"),
-#     page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
-# ) -> PaginatedResponse[TagResponse]:
-#     return PaginatedResponse(
-#         total=0,
-#         page=0,
-#         page_size=0,
-#         total_pages=0,
-#         items=[],
-#     )
+@router.get(
+    "/",
+    response_model=PaginatedResponse[TagResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def get_all_tags(
+    tag_service: TagService = Depends(get_tag_service),
+    tag_filter: TagFilter = FilterDepends(TagFilter, by_alias=True),
+    incl_deleted: bool = Query(default=False, description="Include tags in trash"),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
+) -> PaginatedResponse[TagResponse]:
+    return await tag_service.get_all_tags(
+        include_deleted=incl_deleted, filter_=tag_filter, page=page, page_size=page_size
+    )
 
 
 @router.post("/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
