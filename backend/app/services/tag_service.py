@@ -90,4 +90,6 @@ class TagService:
         return await self.get_tag_by_id(updated_tag.id_)
 
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
-        pass
+        tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)
+
+        await self.crud.delete(self.db, tag_orm, perm)

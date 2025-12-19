@@ -52,10 +52,10 @@ async def update_tag(
     return await tag_service.update_tag(tag_id, tag_update)
 
 
-# @router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
-# async def delete_tag(
-#     tag_id: int,
-#     perm: bool = False,
-#     tag_service: TagService = Depends(get_tag_service),
-# ) -> None:
-#     await tag_service.delete_tag(tag_id, perm)
+@router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tag(
+    tag_id: int,
+    perm: bool = False,
+    tag_service: TagService = Depends(get_tag_service),
+) -> None:
+    await tag_service.delete_tag(tag_id, perm)
