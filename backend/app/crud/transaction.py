@@ -1,5 +1,5 @@
 from app.crud.base import CRUDBase
-from app.models import TransactionORM
+from app.models.transaction import TransactionORM
 
 
 class CRUDTransaction(CRUDBase[TransactionORM]):

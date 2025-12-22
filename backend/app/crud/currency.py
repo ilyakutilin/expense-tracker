@@ -2,7 +2,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.base import CRUDBase
-from app.models import CurrencyORM
+from app.models.currency import CurrencyORM
 
 
 class CRUDCurrency(CRUDBase[CurrencyORM]):

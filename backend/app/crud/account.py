@@ -4,7 +4,8 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 from app.crud.base import CRUDBase
-from app.models import AccountORM, CurrencyORM
+from app.models.account import AccountORM
+from app.models.currency import CurrencyORM
 
 
 class CRUDAccount(CRUDBase[AccountORM]):
