@@ -1,16 +1,14 @@
-from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from pydantic import Field, field_validator
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Numeric, Text, text
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.settings import settings
 from app.models.base import BaseFilter, BaseORM
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
-    from backend.app.models.transaction import TransactionORM
+    from backend.app.models.transaction import TransactionLineORM
 
 
 class AccountORM(BaseORM):
@@ -21,15 +19,6 @@ class AccountORM(BaseORM):
     )
     currency_id: Mapped[int | None] = mapped_column(
         ForeignKey("currency.id", ondelete="RESTRICT"), index=True
-    )
-    balance: Mapped[Decimal | None] = mapped_column(
-        Numeric(
-            precision=settings.NUMERIC_PRECISION,
-            scale=settings.NUMERIC_SCALE,
-            decimal_return_scale=settings.NUMERIC_SCALE,
-            asdecimal=True,
-        ),
-        default=Decimal("0.0"),
     )
 
     parent: Mapped["AccountORM | None"] = relationship(
@@ -51,24 +40,10 @@ class AccountORM(BaseORM):
         back_populates="accounts",
     )
 
-    transactions_from: Mapped[list["TransactionORM"]] = relationship(
-        "TransactionORM",
-        foreign_keys="[TransactionORM.from_acc_id]",
-        back_populates="from_acc",
-    )
-
-    transactions_to: Mapped[list["TransactionORM"]] = relationship(
-        "TransactionORM",
-        foreign_keys="[TransactionORM.to_acc_id]",
-        back_populates="to_acc",
-    )
-
-    # Hybrid relationship that combines both from and to transactions
-    transactions: Mapped[list["TransactionORM"]] = relationship(
-        primaryjoin="or_(AccountORM.id_==TransactionORM.from_acc_id, AccountORM.id_==TransactionORM.to_acc_id)",
-        viewonly=True,
-        lazy="select",
-        overlaps="from_acc,to_acc",  # Important to avoid conflicts
+    transaction_lines: Mapped[list["TransactionLineORM"]] = relationship(
+        "TransactionLineORM",
+        back_populates="account",
+        order_by="desc(TransactionLineORM.id_)",
     )
 
     __table_args__ = (
@@ -102,7 +77,6 @@ class AccountFilter(BaseFilter):
             "id",
             "name",
             "type",
-            "balance",
             "created_at",
             "updated_at",
         ]
