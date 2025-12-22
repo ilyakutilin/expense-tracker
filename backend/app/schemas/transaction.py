@@ -9,7 +9,7 @@ from app.schemas.tag import TagResponseBase
 from app.utils.fmt import format_monetary_decimal
 
 
-class OperationType(str, Enum):
+class TransactionType(str, Enum):
     INCOME = "income"
     EXPENSE = "expense"
     TRANSFER = "transfer"
@@ -19,12 +19,12 @@ class OperationType(str, Enum):
     REFUND = "refund"
 
 
-class OperationValidators(BaseModel):
+class TransactionValidators(BaseModel):
     pass
 
 
-class OperationCreate(OperationValidators):
-    type_: OperationType = Field(..., validation_alias="type")
+class TransactionCreate(TransactionValidators):
+    type_: TransactionType = Field(..., validation_alias="type")
     from_acc_id: int = Field(..., ge=1)
     to_acc_id: int = Field(..., ge=1)
     from_amount: Decimal
@@ -41,8 +41,8 @@ class OperationCreate(OperationValidators):
         return self
 
 
-class OperationUpdate(OperationValidators):
-    type_: OperationType | None = Field(None, validation_alias="type")
+class TransactionUpdate(TransactionValidators):
+    type_: TransactionType | None = Field(None, validation_alias="type")
     from_acc_id: int | None = Field(None, ge=1)
     to_acc_id: int | None = Field(None, ge=1)
     from_amount: Decimal | None = None
@@ -59,9 +59,9 @@ class OperationUpdate(OperationValidators):
         return self
 
 
-class OperationResponse(BaseModel):
+class TransactionResponse(BaseModel):
     id_: int = Field(serialization_alias="id")
-    type_: OperationType = Field(serialization_alias="type")
+    type_: TransactionType = Field(serialization_alias="type")
     from_acc: AccountResponseBaseWithCurrency
     to_acc: AccountResponseBaseWithCurrency
     from_amount: Decimal

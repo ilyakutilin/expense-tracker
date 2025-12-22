@@ -2,7 +2,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
-from app.services import AccountService, CurrencyService, OperationService, TagService
+from app.services import AccountService, CurrencyService, TagService, TransactionService
 
 
 def get_currency_service(db: AsyncSession = Depends(get_db_session)) -> CurrencyService:
@@ -26,10 +26,10 @@ def get_tag_service(db: AsyncSession = Depends(get_db_session)) -> TagService:
     return TagService(db)
 
 
-def get_operation_service(
+def get_transaction_service(
     db: AsyncSession = Depends(get_db_session),
-) -> OperationService:
+) -> TransactionService:
     """
-    Operation service dependency.
+    Transaction service dependency.
     """
-    return OperationService(db)
+    return TransactionService(db)

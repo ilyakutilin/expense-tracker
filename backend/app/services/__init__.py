@@ -1,6 +1,6 @@
 from app.services.account_service import AccountService
 from app.services.currency_service import CurrencyService
-from app.services.operation_service import OperationService
 from app.services.tag_service import TagService
+from backend.app.services.transaction_service import TransactionService
 
-__all__ = ["CurrencyService", "AccountService", "TagService", "OperationService"]
+__all__ = ["CurrencyService", "AccountService", "TagService", "TransactionService"]

@@ -17,4 +17,4 @@ class TagResponseBase(BaseModel):
 class TagResponse(TagResponseBase):
     created_at: datetime
     updated_at: datetime
-    operations_count: int
+    transactions_count: int

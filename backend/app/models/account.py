@@ -10,7 +10,7 @@ from app.models.base import BaseFilter, BaseORM
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
-    from app.models.operation import OperationORM
+    from backend.app.models.transaction import TransactionORM
 
 
 class AccountORM(BaseORM):
@@ -51,21 +51,21 @@ class AccountORM(BaseORM):
         back_populates="accounts",
     )
 
-    operations_from: Mapped[list["OperationORM"]] = relationship(
-        "OperationORM",
-        foreign_keys="[OperationORM.from_acc_id]",
+    transactions_from: Mapped[list["TransactionORM"]] = relationship(
+        "TransactionORM",
+        foreign_keys="[TransactionORM.from_acc_id]",
         back_populates="from_acc",
     )
 
-    operations_to: Mapped[list["OperationORM"]] = relationship(
-        "OperationORM",
-        foreign_keys="[OperationORM.to_acc_id]",
+    transactions_to: Mapped[list["TransactionORM"]] = relationship(
+        "TransactionORM",
+        foreign_keys="[TransactionORM.to_acc_id]",
         back_populates="to_acc",
     )
 
-    # Hybrid relationship that combines both from and to operations
-    operations: Mapped[list["OperationORM"]] = relationship(
-        primaryjoin="or_(AccountORM.id_==OperationORM.from_acc_id, AccountORM.id_==OperationORM.to_acc_id)",
+    # Hybrid relationship that combines both from and to transactions
+    transactions: Mapped[list["TransactionORM"]] = relationship(
+        primaryjoin="or_(AccountORM.id_==TransactionORM.from_acc_id, AccountORM.id_==TransactionORM.to_acc_id)",
         viewonly=True,
         lazy="select",
         overlaps="from_acc,to_acc",  # Important to avoid conflicts

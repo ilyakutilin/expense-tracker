@@ -13,15 +13,15 @@ if TYPE_CHECKING:
     from app.models.tag import TagORM
 
 
-operation_tag = Table(
-    "operation_tag",
+transaction_tag = Table(
+    "transaction_tag",
     BaseORM.metadata,
-    Column("operation_id", ForeignKey("operation.id"), primary_key=True),
+    Column("transaction_id", ForeignKey("transaction.id"), primary_key=True),
     Column("tag_id", ForeignKey("tag.id"), primary_key=True),
 )
 
 
-class OperationORM(BaseORM):
+class TransactionORM(BaseORM):
     type_: Mapped[str] = mapped_column("type", Text, index=True)
     from_acc_id: Mapped[int] = mapped_column(
         ForeignKey("account.id", ondelete="RESTRICT"), index=True
@@ -52,29 +52,29 @@ class OperationORM(BaseORM):
     from_acc: Mapped["AccountORM"] = relationship(
         "AccountORM",
         foreign_keys=[from_acc_id],
-        back_populates="operations_from",
+        back_populates="transactions_from",
     )
 
     to_acc: Mapped["AccountORM"] = relationship(
         "AccountORM",
         foreign_keys=[to_acc_id],
-        back_populates="operations_to",
+        back_populates="transactions_to",
     )
 
     tags: Mapped[list["TagORM"]] = relationship(
         "TagORM",
-        secondary=operation_tag,
-        back_populates="operations",
+        secondary=transaction_tag,
+        back_populates="transactions",
         lazy="selectin",
     )
 
 
-class OperationFilter(BaseFilter):
+class TransactionFilter(BaseFilter):
     order_by: list[str] = ["id"]
     search: str | None = None
 
     class Constants(BaseFilter.Constants):
-        model = OperationORM
+        model = TransactionORM
         search_model_fields = ["comment"]
 
-    # TODO: Complete OperationFilter
+    # TODO: Complete TransactionFilter
