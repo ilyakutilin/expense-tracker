@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Union
 
@@ -13,7 +14,19 @@ from sqlalchemy.sql.selectable import Select
 class BaseORM(AsyncAttrs, DeclarativeBase):
     @declared_attr.directive
     def __tablename__(cls):
-        return cls.__name__.lower().replace("orm", "")
+        name = cls.__name__
+        name = name.replace("ORM", "")
+        pattern = re.compile(
+            r"""
+                (?<=[a-z])      # preceded by lowercase
+                (?=[A-Z])       # followed by uppercase
+                |               #   OR
+                (?<=[A-Z])      # preceded by lowercase
+                (?=[A-Z][a-z])  # followed by uppercase, then lowercase
+            """,
+            re.X,
+        )
+        return pattern.sub("_", name).lower()
 
     id_: Mapped[int] = mapped_column(
         "id",
