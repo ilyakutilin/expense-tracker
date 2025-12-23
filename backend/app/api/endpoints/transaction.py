@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi_filter import FilterDepends
 
 from app.api.deps import get_transaction_service
+from app.models.transaction import TransactionFilter
 from app.schemas.pagination import PaginatedResponse
-from app.services import TransactionService
-from backend.app.models.transaction import TransactionFilter
-from backend.app.schemas.transaction import (
+from app.schemas.transaction import (
     TransactionCreate,
     TransactionResponse,
     TransactionUpdate,
 )
+from app.services import TransactionService
 
 router = APIRouter()
 

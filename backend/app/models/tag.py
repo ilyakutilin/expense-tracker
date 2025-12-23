@@ -5,10 +5,10 @@ from sqlalchemy import Index, Text, func, select, text
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.models.base import BaseFilter, BaseORM
-from backend.app.models.transaction import transaction_tag
+from app.models.transaction import transaction_tag
 
 if TYPE_CHECKING:
-    from backend.app.models.transaction import TransactionORM
+    from app.models.transaction import TransactionORM
 
 
 class TagORM(BaseORM):

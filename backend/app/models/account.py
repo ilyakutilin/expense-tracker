@@ -8,7 +8,7 @@ from app.models.base import BaseFilter, BaseORM
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
-    from backend.app.models.transaction import TransactionLineORM
+    from app.models.transaction import TransactionLineORM
 
 
 class AccountORM(BaseORM):

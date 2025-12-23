@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.schemas.pagination import PaginatedResponse
-from backend.app.schemas.transaction import (
+from app.schemas.transaction import (
     TransactionCreate,
     TransactionResponse,
     TransactionUpdate,
