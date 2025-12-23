@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app import crud
+from app.core import exceptions as exc
+from app.models.transaction import TransactionORM
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import (
     TransactionCreate,
@@ -22,7 +24,15 @@ class TransactionService:
     async def get_transaction_by_id(
         self, transaction_id: int, include_deleted: bool = False
     ) -> TransactionResponse:  # type: ignore
-        pass
+        transaction_orm: TransactionORM | None = await self.crud.get_by_id(
+            self.db, transaction_id, include_deleted
+        )
+        if not transaction_orm:
+            raise exc.NotFoundError(
+                message=f"Transaction with id {transaction_id} not found",
+                detail={"id": transaction_id},
+            )
+        return TransactionResponse.model_validate(transaction_orm)
 
     async def get_all_transactions(
         self,
