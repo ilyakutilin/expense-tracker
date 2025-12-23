@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 
-from app import crud, models
+from app import crud
 from app.core import exceptions as exc
+from app.models.account import AccountORM
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
 from app.schemas.pagination import PaginatedResponse
 
@@ -20,8 +21,8 @@ class AccountService:
 
     async def _get_account_orm_by_id(
         self, account_id: int, include_deleted: bool = False
-    ) -> models.AccountORM:
-        account_orm: models.AccountORM | None = await self.crud.get_by_id(
+    ) -> AccountORM:
+        account_orm: AccountORM | None = await self.crud.get_by_id(
             self.db, account_id, include_deleted
         )
         if not account_orm:
@@ -32,10 +33,8 @@ class AccountService:
         return account_orm
 
     async def _check_name_exists(self, name: str) -> None:
-        account_orm: models.AccountORM | None = await self.crud.get_account_by_name(
-            self.db, name
-        )
-        if account_orm:
+        exists: bool = await self.crud.name_exists(self.db, name)
+        if exists:
             raise exc.ConflictError(
                 message=f"Account with name '{name}' already exists",
                 detail={"name": name},
@@ -78,7 +77,7 @@ class AccountService:
     async def get_account_by_id(
         self, account_id: int, include_deleted: bool = False
     ) -> AccountResponse:
-        account_orm: models.AccountORM = await self._get_account_orm_by_id(
+        account_orm: AccountORM = await self._get_account_orm_by_id(
             account_id, include_deleted
         )
         return AccountResponse.model_validate(account_orm)
@@ -112,13 +111,23 @@ class AccountService:
             account_create.parent_id, account_create.currency_id
         )
         currency_data: dict[str, Any] = account_create.model_dump()
-        account_orm: models.AccountORM = await self.crud.create(self.db, currency_data)
+        await self.crud.create(self.db, currency_data, refresh=False)
+        account_orm: AccountORM | None = await self.crud.get_by_name(
+            self.db, account_create.name, include_deleted=False
+        )
+        if not account_orm:
+            raise exc.DatabaseError(
+                message=(
+                    "Created account could not be fetched from the database by name"
+                ),
+                detail={"name": account_create.name},
+            )
         return AccountResponse.model_validate(account_orm)
 
     async def update_account(
         self, account_id: int, account_update: AccountUpdate
     ) -> AccountResponse:
-        account_orm: models.AccountORM = await self._get_account_orm_by_id(account_id)
+        account_orm: AccountORM = await self._get_account_orm_by_id(account_id)
 
         if account_update.name:
             await self._check_name_exists(account_update.name)
@@ -135,12 +144,12 @@ class AccountService:
                 message="No fields to update", detail={"id": account_id}
             )
 
-        updated_account: models.AccountORM = await self.crud.update(
+        updated_account: AccountORM = await self.crud.update(
             db_session=self.db, obj_orm=account_orm, obj_data=account_data
         )
         return await self.get_account_by_id(updated_account.id_)
 
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
-        account: models.AccountORM = await self._get_account_orm_by_id(account_id, perm)
+        account: AccountORM = await self._get_account_orm_by_id(account_id, perm)
 
         await self.crud.delete(self.db, account, perm)

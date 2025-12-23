@@ -72,16 +72,16 @@ class CRUDBase(Generic[ModelType]):
         return accounts, total
 
     async def create(
-        self,
-        db_session: AsyncSession,
-        obj_data: dict[str, Any],
+        self, db_session: AsyncSession, obj_data: dict[str, Any], refresh: bool = True
     ) -> ModelType:
         try:
             obj_orm = self.model(**obj_data)
 
             db_session.add(obj_orm)
             await db_session.commit()
-            await db_session.refresh(obj_orm)
+
+            if refresh:
+                await db_session.refresh(obj_orm)
 
             return obj_orm
 

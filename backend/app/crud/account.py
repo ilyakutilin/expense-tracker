@@ -20,15 +20,25 @@ class CRUDAccount(CRUDBase[AccountORM]):
             ),
         )
 
-    async def get_account_by_name(
+    async def name_exists(
         self,
         db_session: AsyncSession,
         name: str,
-    ) -> AccountORM | None:
-        query = select(AccountORM).where(
-            and_(AccountORM.name == name, AccountORM.is_active)
+    ) -> bool:
+        stmt = select(self.model.id_).where(
+            and_(self.model.name == name, self.model.is_active)
         )
-        result = await db_session.execute(query)
+        result = await db_session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
+    async def get_by_name(
+        self, db_session: AsyncSession, name: str, include_deleted: bool = False
+    ) -> AccountORM | None:
+        stmt = select(self.model).where(self.model.name == name)
+        if not include_deleted:
+            stmt = stmt.where(self.model.is_active)
+        stmt = stmt.options(*self._get_options())
+        result = await db_session.execute(stmt)
         return result.scalar_one_or_none()
 
 

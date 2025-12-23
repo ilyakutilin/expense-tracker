@@ -7,7 +7,6 @@ from pydantic import (
     ConfigDict,
     Field,
     SerializerFunctionWrapHandler,
-    field_validator,
     model_serializer,
 )
 
@@ -28,36 +27,6 @@ class AccountType(str, Enum):
 class AccountBase(BaseModel):
     parent_id: int | None = Field(None, ge=1)
     currency_id: int | None = Field(None, ge=1)
-    balance: Decimal | None = Field(Decimal("0.00"))
-
-    @field_validator("balance", mode="after")
-    @classmethod
-    def validate_balance_precision_and_scale(cls, v: Decimal) -> Decimal:
-        _, digits, exponent = v.as_tuple()
-
-        total_digits = len(digits)
-        if total_digits > MAX_PRECISION:
-            raise ValueError(
-                (
-                    f"Numeric value has {total_digits} total digits, which exceeds "
-                    f"the max precision of {MAX_PRECISION}."
-                )
-            )
-
-        # Exponent is negative for a value with a fractional part.
-        # e.g., Decimal('1.23').as_tuple() -> (0, (1, 2, 3), -2). Scale is |-2| = 2.
-        if not isinstance(exponent, int):
-            raise ValueError("Failed to validate the scale of the numeric value.")
-        scale = -exponent
-        if scale > MAX_SCALE:
-            raise ValueError(
-                (
-                    f"Numeric value has {scale} decimal places, which exceeds "
-                    f"the max scale of {MAX_SCALE}."
-                )
-            )
-
-        return v
 
 
 class AccountCreate(AccountBase):
@@ -84,7 +53,6 @@ class AccountResponseBaseWithCurrency(AccountResponseBase):
 
 class AccountResponse(AccountResponseBaseWithCurrency):
     parent: AccountResponseBase | None
-    balance: Decimal | None
     created_at: datetime
     updated_at: datetime
 
@@ -102,7 +70,6 @@ class AccountResponse(AccountResponseBaseWithCurrency):
             "type",
             "parent",
             "currency",
-            "balance",
             "created_at",
             "updated_at",
         ]
