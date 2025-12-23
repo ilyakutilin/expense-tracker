@@ -2,11 +2,15 @@ import datetime as dt
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.core.settings import settings
 from app.schemas.account import AccountResponseBaseWithCurrency
 from app.schemas.tag import TagResponseBase
 from app.utils.fmt import format_monetary_decimal
+
+MAX_PRECISION = settings.NUMERIC_PRECISION
+MAX_SCALE = settings.NUMERIC_SCALE
 
 
 class TransactionType(str, Enum):
@@ -20,7 +24,34 @@ class TransactionType(str, Enum):
 
 
 class TransactionValidators(BaseModel):
-    pass
+    @field_validator("from_amount", "to_amount", mode="after", check_fields=False)
+    @classmethod
+    def validate_decimal_precision_and_scale(cls, v: Decimal) -> Decimal:
+        _, digits, exponent = v.as_tuple()
+
+        total_digits = len(digits)
+        if total_digits > MAX_PRECISION:
+            raise ValueError(
+                (
+                    f"Numeric value has {total_digits} total digits, which exceeds "
+                    f"the max precision of {MAX_PRECISION}."
+                )
+            )
+
+        # Exponent is negative for a value with a fractional part.
+        # e.g., Decimal('1.23').as_tuple() -> (0, (1, 2, 3), -2). Scale is |-2| = 2.
+        if not isinstance(exponent, int):
+            raise ValueError("Failed to validate the scale of the numeric value.")
+        scale = -exponent
+        if scale > MAX_SCALE:
+            raise ValueError(
+                (
+                    f"Numeric value has {scale} decimal places, which exceeds "
+                    f"the max scale of {MAX_SCALE}."
+                )
+            )
+
+        return v
 
 
 class TransactionCreate(TransactionValidators):
@@ -30,9 +61,9 @@ class TransactionCreate(TransactionValidators):
     from_amount: Decimal
     to_amount: Decimal | None = None
     date: dt.date = dt.date.today()
-    comment: str | None = None
+    comment: str | None = Field(None, max_length=1000)
     is_template: bool = False
-    tag_ids: list[int] | None = None
+    tag_ids: list[int] = []
 
     @model_validator(mode="after")
     def set_to_amount_default(self):
@@ -48,7 +79,7 @@ class TransactionUpdate(TransactionValidators):
     from_amount: Decimal | None = None
     to_amount: Decimal | None
     date: dt.date | None = None
-    comment: str | None = None
+    comment: str | None = Field(None, max_length=1000)
     is_template: bool | None = None
     tag_ids: list[int] | None = None
 
@@ -59,13 +90,25 @@ class TransactionUpdate(TransactionValidators):
         return self
 
 
-class TransactionResponse(BaseModel):
+class TransactionLineResponse(BaseModel):
     id_: int = Field(serialization_alias="id")
-    type_: TransactionType = Field(serialization_alias="type")
-    from_acc: AccountResponseBaseWithCurrency
-    to_acc: AccountResponseBaseWithCurrency
-    from_amount: Decimal
-    to_amount: Decimal
+    account: AccountResponseBaseWithCurrency
+    amount: Decimal
+    created_at: dt.datetime
+    updated_at: dt.datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={Decimal: format_monetary_decimal},
+    )
+
+
+class TransactionResponse(BaseModel):
+    id_: int = Field(..., serialization_alias="id")
+    type_: TransactionType = Field(..., serialization_alias="type")
+    lines: list[TransactionLineResponse] = Field(..., exclude=True)
+    from_: TransactionLineResponse | None = Field(None, serialization_alias="from")
+    to: TransactionLineResponse | None = None
     date: dt.date
     comment: str | None
     is_template: bool
@@ -77,3 +120,27 @@ class TransactionResponse(BaseModel):
         from_attributes=True,
         json_encoders={Decimal: format_monetary_decimal},
     )
+
+    @model_validator(mode="after")
+    def split_lines(self) -> "TransactionResponse":
+        lines = self.lines
+
+        if len(lines) != 2:
+            raise ValueError(f"Expected exactly 2 transaction lines, got {len(lines)}")
+
+        if any(line.amount == 0 for line in lines):
+            raise ValueError("Transaction line amounts cannot be zero")
+
+        negative_lines = [line for line in lines if line.amount < 0]
+        positive_lines = [line for line in lines if line.amount > 0]
+
+        if len(negative_lines) != 1 or len(positive_lines) != 1:
+            raise ValueError(
+                "Expected exactly one negative and one positive amount, "
+                f"got {len(negative_lines)} negative and {len(positive_lines)} positive"
+            )
+
+        self.from_ = negative_lines[0]
+        self.to = positive_lines[0]
+
+        return self
