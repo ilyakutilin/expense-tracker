@@ -2,9 +2,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas import StrippedStr
+
 
 class TagCreateUpdate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
+    name: StrippedStr = Field(..., min_length=1, max_length=100)
 
 
 class TagResponseBase(BaseModel):

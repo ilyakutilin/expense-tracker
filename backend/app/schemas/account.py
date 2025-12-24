@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from app.core.settings import settings
+from app.schemas import StrippedStr
 from app.schemas.currency import CurrencyResponse
 from app.utils.fmt import format_monetary_decimal
 
@@ -31,12 +32,12 @@ class AccountBase(BaseModel):
 
 
 class AccountCreate(AccountBase):
-    name: str = Field(..., min_length=1, max_length=100)
+    name: StrippedStr = Field(..., min_length=1, max_length=100)
     type_: AccountType = Field(..., validation_alias="type")
 
 
 class AccountUpdate(AccountBase):
-    name: str | None = Field(None, min_length=1, max_length=100)
+    name: StrippedStr | None = Field(None, min_length=1, max_length=100)
     type_: AccountType | None = Field(None, validation_alias="type")
 
 

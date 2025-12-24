@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from app.core.settings import settings
+from app.schemas import StrippedStr
 from app.schemas.account import AccountResponseBaseWithCurrency
 from app.schemas.tag import TagResponseBase
 from app.utils.fmt import format_monetary_decimal
@@ -90,7 +91,7 @@ class TransactionLineCreate(TransactionValidators):
 class TransactionCreate(TransactionValidators):
     type_: TransactionType = Field(..., validation_alias="type")
     date: dt.date = dt.date.today()
-    comment: str | None = Field(None, max_length=1000)
+    comment: StrippedStr | None = Field(None, max_length=1000)
     is_template: bool = False
     lines: list[TransactionLineCreate]
     tag_ids: list[PositiveInt] = []
@@ -119,6 +120,7 @@ class TransactionCreate(TransactionValidators):
     @field_validator("tag_ids", mode="after")
     @classmethod
     def validate_tag_ids(cls, v: list[int]) -> list[int]:
+        # Ensure uniqueness
         v = list(dict.fromkeys(v))
         if len(v) > 100:
             raise ValueError("Cannot assign more than 100 tags to a transaction")
