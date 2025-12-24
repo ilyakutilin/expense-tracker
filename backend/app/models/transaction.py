@@ -30,6 +30,7 @@ class TransactionORM(BaseORM):
     lines: Mapped[list["TransactionLineORM"]] = relationship(
         "TransactionLineORM",
         back_populates="transaction",
+        cascade="all, delete-orphan",
     )
 
     tags: Mapped[list["TagORM"]] = relationship(

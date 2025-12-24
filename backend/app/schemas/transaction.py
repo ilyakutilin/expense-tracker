@@ -2,7 +2,13 @@ import datetime as dt
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from app.core.settings import settings
 from app.schemas.account import AccountResponseBaseWithCurrency
@@ -54,40 +60,32 @@ class TransactionValidators(BaseModel):
         return v
 
 
+class TransactionLineCreate(TransactionValidators):
+    account_id: int = Field(..., ge=1)
+    amount: Decimal
+
+
 class TransactionCreate(TransactionValidators):
     type_: TransactionType = Field(..., validation_alias="type")
-    from_acc_id: int = Field(..., ge=1)
-    to_acc_id: int = Field(..., ge=1)
-    from_amount: Decimal
-    to_amount: Decimal | None = None
     date: dt.date = dt.date.today()
     comment: str | None = Field(None, max_length=1000)
     is_template: bool = False
+    lines: list[TransactionLineCreate] = []
     tag_ids: list[int] = []
 
-    @model_validator(mode="after")
-    def set_to_amount_default(self):
-        if self.to_amount is None:
-            self.to_amount = self.from_amount
-        return self
+
+class TransactionLineUpdate(TransactionValidators):
+    account_id: int | None = Field(None, ge=1)
+    amount: Decimal | None = None
 
 
 class TransactionUpdate(TransactionValidators):
     type_: TransactionType | None = Field(None, validation_alias="type")
-    from_acc_id: int | None = Field(None, ge=1)
-    to_acc_id: int | None = Field(None, ge=1)
-    from_amount: Decimal | None = None
-    to_amount: Decimal | None
     date: dt.date | None = None
     comment: str | None = Field(None, max_length=1000)
     is_template: bool | None = None
+    lines: list[TransactionLineUpdate] | None = None
     tag_ids: list[int] | None = None
-
-    @model_validator(mode="after")
-    def set_to_amount_default(self):
-        if self.from_amount is not None and self.to_amount is None:
-            self.to_amount = self.from_amount
-        return self
 
 
 class TransactionLineResponse(BaseModel):
