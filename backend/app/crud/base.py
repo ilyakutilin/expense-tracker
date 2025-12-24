@@ -20,9 +20,15 @@ class CRUDBase(Generic[ModelType]):
         return tuple()
 
     async def exists(
-        self, db_session: AsyncSession, obj_id: int, include_deleted: bool = False
+        self, db_session: AsyncSession, include_deleted: bool = False, **params
     ) -> bool:
-        stmt = select(self.model.id_).where(self.model.id_ == obj_id)
+        stmt = select(self.model.id_)
+
+        for attr, value in params.items():
+            if not hasattr(self.model, attr):
+                raise AttributeError(f"{self.model.__name__} has no attribute '{attr}'")
+            stmt = stmt.where(getattr(self.model, attr) == value)
+
         if not include_deleted:
             stmt = stmt.where(self.model.is_active)
         result = await db_session.scalar(stmt)
@@ -34,6 +40,23 @@ class CRUDBase(Generic[ModelType]):
         stmt = select(self.model).where(self.model.id_ == obj_id)
         if not include_deleted:
             stmt = stmt.where(self.model.is_active)
+        stmt = stmt.options(*self._get_options())
+        result = await db_session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_by(
+        self, db_session: AsyncSession, include_deleted: bool = False, **params
+    ) -> ModelType | None:
+        stmt = select(self.model)
+
+        for attr, value in params.items():
+            if not hasattr(self.model, attr):
+                raise AttributeError(f"{self.model.__name__} has no attribute '{attr}'")
+            stmt = stmt.where(getattr(self.model, attr) == value)
+
+        if not include_deleted:
+            stmt = stmt.where(self.model.is_active)
+
         stmt = stmt.options(*self._get_options())
         result = await db_session.execute(stmt)
         return result.scalar_one_or_none()

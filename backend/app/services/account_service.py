@@ -33,7 +33,7 @@ class AccountService:
         return account_orm
 
     async def _check_name_exists(self, name: str) -> None:
-        exists: bool = await self.crud.name_exists(self.db, name)
+        exists: bool = await self.crud.exists(self.db, name=name)
         if exists:
             raise exc.ConflictError(
                 message=f"Account with name '{name}' already exists",
@@ -46,13 +46,13 @@ class AccountService:
         msg_txt = ""
         detail: dict[str, int] = {}
         if parent_id:
-            parent_exists = await self.crud.exists(self.db, parent_id)
+            parent_exists = await self.crud.exists(self.db, id_=parent_id)
             if not parent_exists:
                 detail["parent_id"] = parent_id
                 msg_txt = f"Parent account with ID {parent_id} does not exist."
 
         if currency_id:
-            currency_exists = await self.currency_crud.exists(self.db, currency_id)
+            currency_exists = await self.currency_crud.exists(self.db, id_=currency_id)
             if not currency_exists:
                 detail["currency_id"] = currency_id
                 msg_txt = (
@@ -112,8 +112,8 @@ class AccountService:
         )
         currency_data: dict[str, Any] = account_create.model_dump()
         await self.crud.create(self.db, currency_data, refresh=False)
-        account_orm: AccountORM | None = await self.crud.get_by_name(
-            self.db, account_create.name, include_deleted=False
+        account_orm: AccountORM | None = await self.crud.get_by(
+            self.db, include_deleted=False, name=account_create.name
         )
         if not account_orm:
             raise exc.DatabaseError(

@@ -20,13 +20,11 @@ class TagService:
     async def _check_name_exists(
         self, name: str, include_deleted: bool = False
     ) -> None:
-        existing_id: int | None = await self.crud.exists_by_name(
-            self.db, name, include_deleted
-        )
-        if existing_id:
+        exists: bool = await self.crud.exists(self.db, include_deleted, name=name)
+        if exists:
             raise exc.ConflictError(
                 message=f"Tag with name '{name}' already exists",
-                detail={"id": existing_id, "name": name},
+                detail={"name": name},
             )
 
     async def _get_tag_orm_by_id(
