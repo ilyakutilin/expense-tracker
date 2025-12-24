@@ -6,6 +6,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PositiveInt,
     field_validator,
     model_validator,
 )
@@ -59,10 +60,31 @@ class TransactionValidators(BaseModel):
 
         return v
 
+    @field_validator("lines", mode="after")
+    @classmethod
+    def sort_lines_by_amount(
+        cls, v: list["TransactionLineCreate"]
+    ) -> list["TransactionLineCreate"]:
+        return sorted(v, key=lambda x: x.amount)
+
 
 class TransactionLineCreate(TransactionValidators):
-    account_id: int = Field(..., ge=1)
+    account_id: PositiveInt
     amount: Decimal
+
+    @field_validator("amount", mode="after")
+    @classmethod
+    def validate_amount(cls, v: Decimal) -> Decimal:
+        if v == 0:
+            raise ValueError("Amount cannot be zero")
+
+        max_val = 10 ** (MAX_PRECISION - MAX_SCALE)
+        if v <= Decimal(-max_val) or v >= Decimal(max_val):
+            raise ValueError(
+                f"Amount limit is {max_val}, not inclusive, regardless of the sign"
+            )
+
+        return v
 
 
 class TransactionCreate(TransactionValidators):
@@ -70,8 +92,38 @@ class TransactionCreate(TransactionValidators):
     date: dt.date = dt.date.today()
     comment: str | None = Field(None, max_length=1000)
     is_template: bool = False
-    lines: list[TransactionLineCreate] = []
-    tag_ids: list[int] = []
+    lines: list[TransactionLineCreate]
+    tag_ids: list[PositiveInt] = []
+
+    @field_validator("lines", mode="after")
+    @classmethod
+    def validate_lines(
+        cls, v: list[TransactionLineCreate]
+    ) -> list[TransactionLineCreate]:
+        if len(v) != 2:
+            raise ValueError(
+                "There should be exactly two transaction lines in a transaction"
+            )
+
+        # By this moment the lines are already sorted by amount
+        if not (v[0].amount < 0 and v[1].amount > 0):
+            raise ValueError(
+                "Amounts in transaction lines shall be with opposite signs"
+            )
+
+        if v[0].account_id == v[1].account_id:
+            raise ValueError("Accounts in the transaction lines shall be different")
+
+        return v
+
+    @field_validator("tag_ids", mode="after")
+    @classmethod
+    def validate_tag_ids(cls, v: list[int]) -> list[int]:
+        v = list(dict.fromkeys(v))
+        if len(v) > 100:
+            raise ValueError("Cannot assign more than 100 tags to a transaction")
+
+        return v
 
 
 class TransactionLineUpdate(TransactionValidators):
