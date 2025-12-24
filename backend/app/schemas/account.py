@@ -6,6 +6,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PositiveInt,
     SerializerFunctionWrapHandler,
     model_serializer,
 )
@@ -25,8 +26,8 @@ class AccountType(str, Enum):
 
 
 class AccountBase(BaseModel):
-    parent_id: int | None = Field(None, ge=1)
-    currency_id: int | None = Field(None, ge=1)
+    parent_id: PositiveInt | None
+    currency_id: PositiveInt | None
 
 
 class AccountCreate(AccountBase):
@@ -40,7 +41,7 @@ class AccountUpdate(AccountBase):
 
 
 class AccountResponseBase(BaseModel):
-    id_: int = Field(serialization_alias="id")
+    id_: PositiveInt = Field(serialization_alias="id")
     name: str
     type_: str = Field(serialization_alias="type")
 
