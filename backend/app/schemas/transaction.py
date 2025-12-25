@@ -61,7 +61,7 @@ class TransactionValidators(BaseModel):
 
         return v
 
-    @field_validator("lines", mode="after")
+    @field_validator("lines", mode="after", check_fields=False)
     @classmethod
     def sort_lines_by_amount(
         cls, v: list["TransactionLineCreate"]
@@ -70,6 +70,7 @@ class TransactionValidators(BaseModel):
 
 
 class TransactionLineCreate(TransactionValidators):
+    transaction_id: PositiveInt | None = None
     account_id: PositiveInt
     amount: Decimal
 
@@ -93,8 +94,8 @@ class TransactionCreate(TransactionValidators):
     date: dt.date = dt.date.today()
     comment: StrippedStr | None = Field(None, max_length=1000)
     is_template: bool = False
-    lines: list[TransactionLineCreate]
-    tag_ids: list[PositiveInt] = []
+    lines: list[TransactionLineCreate] = Field(..., exclude=True)
+    tag_ids: list[PositiveInt] = Field([], exclude=True)
 
     @field_validator("lines", mode="after")
     @classmethod

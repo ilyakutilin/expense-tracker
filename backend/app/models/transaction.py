@@ -37,7 +37,6 @@ class TransactionORM(BaseORM):
         "TagORM",
         secondary=transaction_tag,
         back_populates="transactions",
-        lazy="selectin",
     )
 
 

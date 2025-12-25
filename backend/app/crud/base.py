@@ -34,6 +34,21 @@ class CRUDBase(Generic[ModelType]):
         result = await db_session.scalar(stmt)
         return result is not None
 
+    async def exist_multiple(
+        self, db_session: AsyncSession, ids: list[int], include_deleted: bool = False
+    ) -> list[int]:
+        if not ids:
+            return []
+
+        stmt = select(self.model.id_).where(self.model.id_.in_(ids))
+
+        if not include_deleted:
+            stmt = stmt.where(self.model.is_active)
+
+        result = await db_session.execute(stmt)
+        existing_ids = result.scalars().all()
+        return list(existing_ids)
+
     async def get_by_id(
         self, db_session: AsyncSession, obj_id: int, include_deleted: bool = False
     ) -> ModelType | None:
@@ -95,13 +110,21 @@ class CRUDBase(Generic[ModelType]):
         return accounts, total
 
     async def create(
-        self, db_session: AsyncSession, obj_data: dict[str, Any], refresh: bool = True
+        self,
+        db_session: AsyncSession,
+        obj_data: dict[str, Any],
+        *,
+        refresh: bool = True,
+        commit: bool = True,
+        # TODO: Return IDs since you don't need the full ORM objects anyway
     ) -> ModelType:
         try:
             obj_orm = self.model(**obj_data)
 
+            # TODO: Add a possibility to add multiple to the session
             db_session.add(obj_orm)
-            await db_session.commit()
+            if commit:
+                await db_session.commit()
 
             if refresh:
                 await db_session.refresh(obj_orm)
@@ -142,6 +165,13 @@ class CRUDBase(Generic[ModelType]):
                 obj_orm.is_deleted = True
             await db_session.commit()
 
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise
+
+    async def commit(self, db_session: AsyncSession) -> None:
+        try:
+            await db_session.commit()
         except SQLAlchemyError:
             await db_session.rollback()
             raise
