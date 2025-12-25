@@ -110,17 +110,15 @@ class AccountService:
         await self._check_referential_integrity(
             account_create.parent_id, account_create.currency_id
         )
-        currency_data: dict[str, Any] = account_create.model_dump()
-        await self.crud.create(self.db, currency_data, refresh=False)
-        account_orm: AccountORM | None = await self.crud.get_by(
-            self.db, include_deleted=False, name=account_create.name
+        account_data: dict[str, Any] = account_create.model_dump()
+        account_id: int = await self.crud.create(self.db, account_data, commit=True)
+        account_orm: AccountORM | None = await self.crud.get_by_id(
+            self.db, account_id, include_deleted=False
         )
         if not account_orm:
             raise exc.DatabaseError(
-                message=(
-                    "Created account could not be fetched from the database by name"
-                ),
-                detail={"name": account_create.name},
+                message=("Created account could not be fetched from the database"),
+                detail={"id": account_id, "name": account_create.name},
             )
         return AccountResponse.model_validate(account_orm)
 

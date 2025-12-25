@@ -114,22 +114,39 @@ class CRUDBase(Generic[ModelType]):
         db_session: AsyncSession,
         obj_data: dict[str, Any],
         *,
-        refresh: bool = True,
         commit: bool = True,
-        # TODO: Return IDs since you don't need the full ORM objects anyway
-    ) -> ModelType:
+    ) -> int:
         try:
-            obj_orm = self.model(**obj_data)
+            orm_obj = self.model(**obj_data)
 
-            # TODO: Add a possibility to add multiple to the session
-            db_session.add(obj_orm)
+            db_session.add(orm_obj)
             if commit:
                 await db_session.commit()
+            else:
+                await db_session.flush()
 
-            if refresh:
-                await db_session.refresh(obj_orm)
+            return orm_obj.id_
 
-            return obj_orm
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise
+
+    async def create_multiple(
+        self,
+        db_session: AsyncSession,
+        data: list[dict[str, Any]],
+        *,
+        commit: bool = True,
+    ) -> list[int]:
+        try:
+            orm_objs = [self.model(**item) for item in data]
+            db_session.add_all(orm_objs)
+            if commit:
+                await db_session.commit()
+            else:
+                await db_session.flush()
+
+            return [orm_obj.id_ for orm_obj in orm_objs]
 
         except SQLAlchemyError:
             await db_session.rollback()

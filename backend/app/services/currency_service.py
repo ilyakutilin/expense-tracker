@@ -41,8 +41,16 @@ class CurrencyService:
     ) -> schemas.CurrencyResponse:
         await self._check_code_exists(currency_create.code)
         currency_data: dict[str, Any] = currency_create.model_dump()
-        db_obj: CurrencyORM = await self.crud.create(self.db, currency_data)
-        return schemas.CurrencyResponse.model_validate(db_obj)
+        currency_id: int = await self.crud.create(self.db, currency_data, commit=True)
+        currency_orm: CurrencyORM | None = await self.crud.get_by_id(
+            self.db, currency_id, include_deleted=False
+        )
+        if not currency_orm:
+            raise exc.DatabaseError(
+                message=("Created currency could not be fetched from the database"),
+                detail={"id": currency_id, "code": currency_create.code},
+            )
+        return schemas.CurrencyResponse.model_validate(currency_orm)
 
     async def update_currency(
         self, currency_id: int, currency_update: schemas.CurrencyUpdate

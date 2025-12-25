@@ -72,7 +72,15 @@ class TagService:
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
         await self._check_name_exists(tag_create.name)
         tag_data: dict[str, Any] = tag_create.model_dump()
-        tag_orm: TagORM = await self.crud.create(self.db, tag_data)
+        tag_id: int = await self.crud.create(self.db, tag_data, commit=True)
+        tag_orm: TagORM | None = await self.crud.get_by_id(
+            self.db, tag_id, include_deleted=False
+        )
+        if not tag_orm:
+            raise exc.DatabaseError(
+                message=("Created tag could not be fetched from the database"),
+                detail={"id": tag_id, "name": tag_create.name},
+            )
         return TagResponse.model_validate(tag_orm)
 
     async def update_tag(self, tag_id: int, tag_update: TagCreateUpdate) -> TagResponse:

@@ -91,19 +91,19 @@ class TransactionService:
             [from_.account_id, to.account_id], tc.tag_ids
         )
         transaction_data: dict[str, Any] = tc.model_dump()
-        pre_orm: TransactionORM = await self.crud.create(
-            self.db, transaction_data, refresh=True, commit=False
+        transaction_id: int = await self.crud.create(
+            self.db, transaction_data, commit=False
         )
 
         for line in tc.lines:
-            line.transaction_id = pre_orm.id_
-            line_data: dict[str, Any] = line.model_dump()
-            await self.line_crud.create(self.db, line_data, refresh=False, commit=False)
+            line.transaction_id = transaction_id
+        lines_data: list[dict[str, Any]] = [line.model_dump() for line in tc.lines]
+        await self.line_crud.create_multiple(self.db, lines_data, commit=False)
 
         if tc.tag_ids:
             inserted_tag_ids = await self.crud.insert_transaction_tags(
                 db_session=self.db,
-                transaction_id=pre_orm.id_,
+                transaction_id=transaction_id,
                 tag_ids=tc.tag_ids,
                 commit=False,
             )
@@ -119,12 +119,12 @@ class TransactionService:
         await self.crud.commit(self.db)
 
         transaction_orm: TransactionORM | None = await self.crud.get_by_id(
-            self.db, obj_id=pre_orm.id_, include_deleted=False
+            self.db, obj_id=transaction_id, include_deleted=False
         )
         if not transaction_orm:
             raise exc.DatabaseError(
                 message=("Created transaction could not be fetched from the database"),
-                detail={"id": pre_orm.id_},
+                detail={"id": transaction_id},
             )
 
         return TransactionResponse.model_validate(transaction_orm)
