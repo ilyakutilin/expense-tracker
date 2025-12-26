@@ -90,10 +90,10 @@ class TagService:
 
         tag_data: dict[str, Any] = tag_update.model_dump()
 
-        updated_tag: TagORM = await self.crud.update(
-            db_session=self.db, obj_orm=tag_orm, obj_data=tag_data
+        updated_tag_id: int = await self.crud.update(
+            db_session=self.db, orm_obj=tag_orm, data=tag_data
         )
-        return await self.get_tag_by_id(updated_tag.id_)
+        return await self.get_tag_by_id(updated_tag_id)
 
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)

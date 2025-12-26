@@ -155,18 +155,21 @@ class CRUDBase(Generic[ModelType]):
     async def update(
         self,
         db_session: AsyncSession,
-        obj_orm: ModelType,
-        obj_data: dict[str, Any],
-    ) -> ModelType:
-        for field, value in obj_data.items():
-            setattr(obj_orm, field, value)
+        orm_obj: ModelType,
+        data: dict[str, Any],
+        *,
+        commit: bool = True,
+    ) -> int:
+        for field, value in data.items():
+            setattr(orm_obj, field, value)
 
         try:
-            db_session.add(obj_orm)
-            await db_session.commit()
-            await db_session.refresh(obj_orm)
+            if commit:
+                await db_session.commit()
+            else:
+                await db_session.flush()
 
-            return obj_orm
+            return orm_obj.id_
 
         except SQLAlchemyError:
             await db_session.rollback()

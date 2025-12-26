@@ -142,10 +142,10 @@ class AccountService:
                 message="No fields to update", detail={"id": account_id}
             )
 
-        updated_account: AccountORM = await self.crud.update(
-            db_session=self.db, obj_orm=account_orm, obj_data=account_data
+        updated_account_id: int = await self.crud.update(
+            db_session=self.db, orm_obj=account_orm, data=account_data
         )
-        return await self.get_account_by_id(updated_account.id_)
+        return await self.get_account_by_id(updated_account_id)
 
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
         account: AccountORM = await self._get_account_orm_by_id(account_id, perm)

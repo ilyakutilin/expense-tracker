@@ -66,9 +66,17 @@ class CurrencyService:
                 message="No fields to update", detail={"id": currency_id}
             )
 
-        updated_currency: CurrencyORM = await self.crud.update(
-            db_session=self.db, obj_orm=currency, obj_data=currency_data
+        updated_currency_id: int = await self.crud.update(
+            db_session=self.db, orm_obj=currency, data=currency_data
         )
+        updated_currency: CurrencyORM | None = await self.crud.get_by_id(
+            self.db, updated_currency_id
+        )
+        if not updated_currency:
+            raise exc.DatabaseError(
+                message=("Updated currency could not be fetched from the database"),
+                detail={"id": currency_id},
+            )
 
         return schemas.CurrencyResponse.model_validate(updated_currency)
 
