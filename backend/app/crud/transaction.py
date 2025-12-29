@@ -1,4 +1,4 @@
-from sqlalchemy import insert
+from sqlalchemy import and_, delete, insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -51,6 +51,48 @@ class CRUDTransaction(CRUDBase[TransactionORM]):
             if commit:
                 await db_session.commit()
             return list(result.scalars().all())
+
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise
+
+    async def update_transaction_tags(
+        self,
+        db_session: AsyncSession,
+        transaction_id: int,
+        existing_tag_ids: list[int],
+        new_tag_ids: list[int],
+        commit: bool = True,
+    ) -> None:
+        if set(existing_tag_ids) == set(new_tag_ids):
+            return
+
+        to_delete = [tag_id for tag_id in existing_tag_ids if tag_id not in new_tag_ids]
+        to_insert = [tag_id for tag_id in new_tag_ids if tag_id not in existing_tag_ids]
+
+        try:
+            if to_delete:
+                delete_stmt = delete(transaction_tag).where(
+                    and_(
+                        transaction_tag.c.transaction_id == transaction_id,
+                        transaction_tag.c.tag_id.in_(to_delete),
+                    )
+                )
+                await db_session.execute(delete_stmt)
+
+            if to_insert:
+                insert_stmt = insert(transaction_tag).values(
+                    [
+                        {"transaction_id": transaction_id, "tag_id": tag_id}
+                        for tag_id in to_insert
+                    ]
+                )
+                await db_session.execute(insert_stmt)
+
+            if commit:
+                await db_session.commit()
+
+            return
 
         except SQLAlchemyError:
             await db_session.rollback()

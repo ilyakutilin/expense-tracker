@@ -1,16 +1,20 @@
 from typing import Any
 
+from fastapi.exceptions import RequestValidationError
 from fastapi_filter.contrib.sqlalchemy import Filter
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 
 from app import crud
 from app.core import exceptions as exc
-from app.models.transaction import TransactionORM
+from app.models.transaction import TransactionLineORM, TransactionORM
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import (
+    UNSET,
     TransactionCreate,
+    TransactionLineUpdate,
     TransactionResponse,
     TransactionUpdate,
 )
@@ -63,9 +67,9 @@ class TransactionService:
                 detail=detail,
             )
 
-    async def get_transaction_by_id(
+    async def _get_transaction_orm_by_id(
         self, transaction_id: int, include_deleted: bool = False
-    ) -> TransactionResponse:  # type: ignore
+    ) -> TransactionORM:
         transaction_orm: TransactionORM | None = await self.crud.get_by_id(
             self.db, transaction_id, include_deleted
         )
@@ -74,6 +78,14 @@ class TransactionService:
                 message=f"Transaction with id {transaction_id} not found",
                 detail={"id": transaction_id},
             )
+        return transaction_orm
+
+    async def get_transaction_by_id(
+        self, transaction_id: int, include_deleted: bool = False
+    ) -> TransactionResponse:
+        transaction_orm: TransactionORM = await self._get_transaction_orm_by_id(
+            transaction_id, include_deleted
+        )
         return TransactionResponse.model_validate(transaction_orm)
 
     async def get_all_transactions(
@@ -130,9 +142,107 @@ class TransactionService:
         return TransactionResponse.model_validate(transaction_orm)
 
     async def update_transaction(
-        self, transaction_id: int, transaction_update: TransactionUpdate
-    ) -> TransactionResponse:  # type: ignore
-        pass
+        self, transaction_id: int, tu: TransactionUpdate
+    ) -> TransactionResponse:
+        # Check if the accounts IDs and tag IDs actually exist in DB
+        account_ids = (
+            []
+            if tu.lines is None
+            else [line.account_id for line in tu.lines if line.account_id is not None]
+        )
+        tag_ids = [] if tu.tag_ids is None else tu.tag_ids
+        await self._check_referential_integrity(account_ids, tag_ids)
+
+        # Get the current state of the transaction and place the ORM object in session
+        t_orm: TransactionORM = await self._get_transaction_orm_by_id(
+            transaction_id, include_deleted=False
+        )
+
+        # Make sure that the line IDs intended for update match the existing line IDs
+        if tu.lines:
+            existing_line_ids = set([line.id_ for line in t_orm.lines])
+            updated_line_ids = {line.id_ for line in tu.lines}
+            if not updated_line_ids.issubset(existing_line_ids):
+                raise exc.ReferentialIntergrityError(
+                    message="Transaction line IDs do not match the transaction",
+                    detail={
+                        "transaction_id": t_orm.id_,
+                        "existing_line_ids": list(existing_line_ids).sort(),
+                        "updated_line_ids": list(updated_line_ids).sort(),
+                    },
+                )
+
+        # Construct a full TransactionCreate schema in order to validate the complete
+        # set of data. The values will be the updated values if set in the update schema
+        # or old existing values otherwise
+        tu_lines = tu.lines if tu.lines is not None else []
+        tu_line_ids = {line.id_ for line in tu_lines}
+        lines: list[dict[str, Any]] = []
+        for ex_line in t_orm.lines:
+            if ex_line.id_ in tu_line_ids:
+                new_line: TransactionLineUpdate = [
+                    line for line in tu_lines if line.id_ == ex_line.id_
+                ][0]
+            else:
+                # Create a dummy update schema instance to avoid AttributeErrors later
+                new_line = TransactionLineUpdate.model_validate({"id": ex_line.id_})
+            # Create a TransactionLineCreate instance to run the validations
+            line_create_data = {
+                "id": new_line.id_,
+                "account_id": new_line.account_id or ex_line.account.id_,
+                "amount": new_line.amount
+                if new_line.amount is not None
+                else ex_line.amount,
+            }
+            lines.append(line_create_data)
+
+        # Validate the whole set of data (updated incorporated into existing)
+        transaction_create_data = {
+            "type": tu.type_ or t_orm.type_,
+            "date": tu.date or t_orm.date,
+            "comment": tu.comment if tu.comment is not UNSET else t_orm.comment,
+            "is_template": tu.is_template
+            if tu.is_template is not None
+            else t_orm.is_template,
+            "lines": lines,
+            "tag_ids": tag_ids,
+        }
+        try:
+            validated_create_model = TransactionCreate.model_validate(
+                transaction_create_data
+            )
+        except ValidationError as e:
+            raise RequestValidationError(errors=e.errors())
+
+        # Update the main transaction object in the DB
+        update_data: dict[str, Any] = validated_create_model.model_dump()
+        updated_transaction_id: int = await self.crud.update(
+            self.db, t_orm, update_data, commit=False
+        )
+
+        # Update the lines in the DB
+        for vl in validated_create_model.lines:
+            if vl.id_ not in tu_line_ids:
+                continue
+            data = vl.model_dump(exclude_unset=True)
+            line_orm: TransactionLineORM = [
+                line for line in t_orm.lines if line.id_ == vl.id_
+            ][0]
+            await self.line_crud.update(self.db, line_orm, data, commit=False)
+
+        # Update the tags in the DB
+        if validated_create_model.tag_ids:
+            await self.crud.update_transaction_tags(
+                db_session=self.db,
+                transaction_id=transaction_id,
+                existing_tag_ids=[tag.id_ for tag in t_orm.tags],
+                new_tag_ids=validated_create_model.tag_ids,
+                commit=False,
+            )
+
+        await self.crud.commit(self.db)
+
+        return await self.get_transaction_by_id(updated_transaction_id)
 
     async def delete_transaction(self, transaction_id: int, perm: bool = False) -> None:
         pass

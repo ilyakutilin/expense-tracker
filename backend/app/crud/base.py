@@ -192,6 +192,7 @@ class CRUDBase(Generic[ModelType]):
     async def commit(self, db_session: AsyncSession) -> None:
         try:
             await db_session.commit()
+            db_session.expire_all()
         except SQLAlchemyError:
             await db_session.rollback()
             raise
