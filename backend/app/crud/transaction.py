@@ -1,10 +1,11 @@
-from sqlalchemy import and_, delete, insert
+from sqlalchemy import and_, delete, func, insert, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 from app.crud.base import CRUDBase
+from app.filters.base import FilterConditions
 from app.models.account import AccountORM
 from app.models.currency import CurrencyORM
 from app.models.tag import TagORM
@@ -28,6 +29,46 @@ class CRUDTransaction(CRUDBase[TransactionORM]):
             .load_only(CurrencyORM.id_, CurrencyORM.code, CurrencyORM.symbol),
             selectinload(TransactionORM.tags).load_only(TagORM.id_, TagORM.name),
         )
+
+    async def get_all_transactions(
+        self,
+        db_session: AsyncSession,
+        include_deleted: bool = False,
+        filter_conditions: FilterConditions | None = None,
+    ) -> tuple[list[TransactionORM], int | None]:
+        stmt = select(self.model)
+        count_stmt = select(func.count(self.model.id_))
+
+        if not include_deleted:
+            stmt = stmt.where(self.model.is_active)
+            count_stmt = count_stmt.where(self.model.is_active)
+
+        total_count: int | None = None
+        if filter_conditions:
+            if filter_conditions.has_filters():
+                for condition in filter_conditions.where_clauses:
+                    stmt = stmt.where(condition)
+                    count_stmt = count_stmt.where(condition)
+
+            total_count_result = await db_session.execute(count_stmt)
+            total_count = total_count_result.scalar()
+
+            stmt = stmt.options(*self._get_options())
+
+            if filter_conditions.has_ordering():
+                for order_clause in filter_conditions.order_by_clauses:
+                    stmt = stmt.order_by(order_clause)
+
+            if filter_conditions.has_pagination():
+                offset, limit = filter_conditions.offset_limit
+                stmt = stmt.offset(offset).limit(limit)
+
+        stmt = stmt.options(*self._get_options())
+
+        result = await db_session.execute(stmt)
+        transaction_orms = list(result.scalars().unique().all())
+
+        return transaction_orms, total_count
 
     async def insert_transaction_tags(
         self,

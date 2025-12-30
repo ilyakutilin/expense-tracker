@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
-from fastapi_filter import FilterDepends
 
 from app.api.deps import get_transaction_service
-from app.models.transaction import TransactionFilter
+from app.filters.transaction import TransactionFilterParams
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import (
     TransactionCreate,
@@ -33,20 +32,14 @@ async def get_one_transaction(
 )
 async def get_all_transactions(
     transaction_service: TransactionService = Depends(get_transaction_service),
-    transaction_filter: TransactionFilter = FilterDepends(
-        TransactionFilter, by_alias=True
-    ),
+    filter_params: TransactionFilterParams = Depends(),
     incl_deleted: bool = Query(
         default=False, description="Include transactions in trash"
     ),
-    page: int = Query(default=1, ge=1, description="Page number"),
-    page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
 ) -> PaginatedResponse[TransactionResponse]:
     return await transaction_service.get_all_transactions(
+        filter_params=filter_params,
         include_deleted=incl_deleted,
-        filter_=transaction_filter,
-        page=page,
-        page_size=page_size,
     )
 
 

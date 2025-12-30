@@ -1,7 +1,7 @@
+import math
 from typing import Any
 
 from fastapi.exceptions import RequestValidationError
-from fastapi_filter.contrib.sqlalchemy import Filter
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
+from app.filters.base import FilterManager
+from app.filters.transaction import TransactionFilterParams, transaction_filter_manager
 from app.models.transaction import TransactionLineORM, TransactionORM
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import (
@@ -90,12 +92,31 @@ class TransactionService:
 
     async def get_all_transactions(
         self,
+        filter_params: TransactionFilterParams,
+        filter_manager: FilterManager = transaction_filter_manager,
         include_deleted: bool = False,
-        filter_: Filter | None = None,
-        page: int = 1,
-        page_size: int = 20,
-    ) -> PaginatedResponse[TransactionResponse]:  # type: ignore
-        pass
+    ) -> PaginatedResponse[TransactionResponse]:
+        conditions = filter_manager.build_conditions(filter_params)
+
+        transaction_orms, total_count = await self.crud.get_all_transactions(
+            db_session=self.db,
+            include_deleted=include_deleted,
+            filter_conditions=conditions,
+        )
+        tranactions = [TransactionResponse.model_validate(t) for t in transaction_orms]
+
+        if total_count is None:
+            raise exc.CodeError("Total count of transactions cannot be None")
+
+        return PaginatedResponse(
+            total=total_count,
+            page=filter_params.page,
+            page_size=filter_params.page_size,
+            total_pages=math.ceil(total_count / filter_params.page_size)
+            if total_count > 0
+            else 0,
+            items=tranactions,
+        )
 
     async def create_transaction(self, tc: TransactionCreate) -> TransactionResponse:
         from_, to = tc.lines

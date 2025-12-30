@@ -6,7 +6,7 @@ from sqlalchemy import Column, Date, ForeignKey, Index, Numeric, Table, Text, fa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.settings import settings
-from app.models.base import BaseFilter, BaseORM
+from app.models.base import BaseORM
 
 if TYPE_CHECKING:
     from app.models.account import AccountORM
@@ -69,14 +69,3 @@ class TransactionLineORM(BaseORM):
     __table_args__ = (
         Index("ix_transaction_line_account_date", "account_id", "transaction_id"),
     )
-
-
-class TransactionFilter(BaseFilter):
-    order_by: list[str] = ["id"]
-    search: str | None = None
-
-    class Constants(BaseFilter.Constants):
-        model = TransactionORM
-        search_model_fields = ["comment"]
-
-    # TODO: Complete TransactionFilter
