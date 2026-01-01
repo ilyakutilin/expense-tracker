@@ -19,6 +19,7 @@ class CRUDTransaction(CRUDBase[TransactionORM]):
             selectinload(TransactionORM.lines)
             .load_only(
                 TransactionLineORM.id_,
+                TransactionLineORM.account_id,
                 TransactionLineORM.amount,
                 TransactionLineORM.created_at,
                 TransactionLineORM.updated_at,

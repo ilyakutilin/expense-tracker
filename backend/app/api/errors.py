@@ -35,14 +35,18 @@ def setup_exception_handlers(app: FastAPI):
         errors = []
         messages = []
         for error in exc.errors():
+            field = (
+                ".".join(str(loc) for loc in error["loc"]) if error["loc"] else "model"
+            )
             errors.append(
                 {
-                    "field": ".".join(str(loc) for loc in error["loc"]),
+                    "field": field,
                     "message": error["msg"],
                     "type": error["type"],
                 }
             )
-            messages.append(f"{error['loc'][-1]}: {error['msg']}")
+            field = field if not error["loc"] else error["loc"][-1]
+            messages.append(f"{field}: {error['msg']}")
 
         msg = f"Validation failed. {'; '.join(messages)}"
         code = "ValidationError"

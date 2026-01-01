@@ -1,4 +1,5 @@
 import math
+from enum import Enum
 from typing import Any
 
 from fastapi.exceptions import RequestValidationError
@@ -14,10 +15,11 @@ from app.filters.transaction import TransactionFilterParams, transaction_filter_
 from app.models.transaction import TransactionLineORM, TransactionORM
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import (
-    UNSET,
     TransactionCreate,
+    TransactionLineFull,
     TransactionLineUpdate,
     TransactionResponse,
+    TransactionType,
     TransactionUpdate,
 )
 
@@ -103,7 +105,7 @@ class TransactionService:
             include_deleted=include_deleted,
             filter_conditions=conditions,
         )
-        tranactions = [TransactionResponse.model_validate(t) for t in transaction_orms]
+        transactions = [TransactionResponse.model_validate(t) for t in transaction_orms]
 
         if total_count is None:
             raise exc.CodeError("Total count of transactions cannot be None")
@@ -115,7 +117,7 @@ class TransactionService:
             total_pages=math.ceil(total_count / filter_params.page_size)
             if total_count > 0
             else 0,
-            items=tranactions,
+            items=transactions,
         )
 
     async def create_transaction(self, tc: TransactionCreate) -> TransactionResponse:
@@ -165,7 +167,37 @@ class TransactionService:
     async def update_transaction(
         self, transaction_id: int, tu: TransactionUpdate
     ) -> TransactionResponse:
-        # Check if the accounts IDs and tag IDs actually exist in DB
+        """Update the transaction by the given ID based on the provided data.
+
+        A 'transaction' here is undersatood as a whole, being comprised of the
+        transaction 'proper' (it's ID, type, date, comment, etc.), transaction lines
+        (having the corresponding account IDs and the amounts), and tags associations
+        (a many-to-many relationship via a secondary table). And the API endpoint
+        instructs to update all of that in one go. So the user can update any of the
+        'proper' fields, any of the lines (providing their IDs in the request body),
+        or the list of tags associated with this transaction. And on the DB side it
+        will all look like separate operations because those are operations on three
+        separate tables.
+
+        Args:
+            transaction_id (int): Transaction ID from the API request URL.
+            tu (TransactionUpdate): Update data.
+
+        Raises:
+            ReferentialIntergrityError: Raised if account IDs of the transaction lines
+                or the tag IDs do not exist in the DB, or if the IDs of the
+                transaction lines in the update data don't match the IDs of the
+                original transaction lines.
+            RequestValidationError: Raised if the transaction lines fail validation
+                so that the user is shown 422 Unprocessable Entity instead of 500
+                that is normally served for Pydantic validation errors.
+
+        Returns:
+            TransactionResponse: A response object based on the updated ORM object
+                from the DB.
+        """
+        # Check if the accounts IDs and tag IDs actually exist in DB.
+        # Raise if they don't.
         account_ids = (
             []
             if tu.lines is None
@@ -179,7 +211,8 @@ class TransactionService:
             transaction_id, include_deleted=False
         )
 
-        # Make sure that the line IDs intended for update match the existing line IDs
+        # Make sure that the line IDs intended for update match the existing line IDs.
+        # Raise if they don't.
         if tu.lines:
             existing_line_ids = set([line.id_ for line in t_orm.lines])
             updated_line_ids = {line.id_ for line in tu.lines}
@@ -193,77 +226,120 @@ class TransactionService:
                     },
                 )
 
-        # Construct a full TransactionCreate schema in order to validate the complete
-        # set of data. The values will be the updated values if set in the update schema
-        # or old existing values otherwise
+        # Construct TransactionLineFull schemas in order to validate the complete
+        # set of data for the lines. The values will be the updated values
+        # if set in the update schema, or old existing values otherwise
         tu_lines = tu.lines if tu.lines is not None else []
         tu_line_ids = {line.id_ for line in tu_lines}
-        lines: list[dict[str, Any]] = []
+        full_lines: list[TransactionLineFull] = []
         for ex_line in t_orm.lines:
+            line_data: dict[str, Any] = {
+                "id": ex_line.id_,
+                "transaction_id": transaction_id,
+            }
             if ex_line.id_ in tu_line_ids:
                 new_line: TransactionLineUpdate = [
                     line for line in tu_lines if line.id_ == ex_line.id_
                 ][0]
-            else:
-                # Create a dummy update schema instance to avoid AttributeErrors later
-                new_line = TransactionLineUpdate.model_validate({"id": ex_line.id_})
-            # Create a TransactionLineCreate instance to run the validations
-            line_create_data = {
-                "id": new_line.id_,
-                "account_id": new_line.account_id or ex_line.account.id_,
-                "amount": new_line.amount
-                if new_line.amount is not None
-                else ex_line.amount,
-            }
-            lines.append(line_create_data)
+                line_data["account_id"] = new_line.account_id or ex_line.account_id
+                line_data["amount"] = (
+                    new_line.amount if new_line.amount is not None else ex_line.amount
+                )
 
-        # Validate the whole set of data (updated incorporated into existing)
-        transaction_create_data = {
-            "type": tu.type_ or t_orm.type_,
-            "date": tu.date or t_orm.date,
-            "comment": tu.comment if tu.comment is not UNSET else t_orm.comment,
-            "is_template": tu.is_template
-            if tu.is_template is not None
-            else t_orm.is_template,
-            "lines": lines,
-            "tag_ids": tag_ids,
-        }
+            else:
+                line_data["account_id"] = ex_line.account_id
+                line_data["amount"] = ex_line.amount
+
+            full_lines.append(TransactionLineFull.model_validate(line_data))
+
+        # Validate the transaction lines based on full set of data (old + new)
         try:
-            validated_create_model = TransactionCreate.model_validate(
-                transaction_create_data
-            )
+            # Type shall be set in order for the schema model_validator to work
+            if not tu.type_:
+                tu.type_ = TransactionType(t_orm.type_)
+            # This should trigger validation due to validate_assignment=True in schema
+            tu.full_lines = full_lines
         except ValidationError as e:
+            # In case validations fails, it needs to be communicated to the user
+            # as a true validation error, not 500. Hence give it to FastAPI to handle.
             raise RequestValidationError(errors=e.errors())
 
+        class UpdateStatus(int, Enum):
+            """Transaction update status.
+
+            This indicates whether anything has been actually updated in the DB or not.
+            The idea is that if there any changes to the transaction itself,
+            its transaction lines, or the array of tags it's associated with,
+            the transaction record should be marked as updated in the DB with the
+            corresponding change of the updated_at, even if no 'proper' fields of the
+            transaction record were actually updated. Therefore this serves as a
+            'tracker' so that if there are changes in the lines, or in the tags
+            associations, we can manually 'mark' the main Transaction object
+            as updated.
+
+            Values:
+                UNDEFINED: We don't know if anything was updated or not.
+                UPDATED: The main Transaction object has already been marked as updated
+                    because one of its 'proper' fields was changed, so the manual
+                    action is not required.
+                REQUIRED: The main Transaction object has not been marked as updated,
+                    but there are changes in the transaction lines and / or the tags.
+                    So the transaction needs to be marked as updated manually.
+            """
+
+            UNDEFINED = 0
+            UPDATED = 1
+            REQUIRED = 2
+
+        update_status = UpdateStatus.UNDEFINED
         # Update the main transaction object in the DB
-        update_data: dict[str, Any] = validated_create_model.model_dump()
-        updated_transaction_id: int = await self.crud.update(
+        update_data: dict[str, Any] = tu.model_dump(exclude_unset=True, by_alias=True)
+        updated_transaction_id: int | None = await self.crud.update(
             self.db, t_orm, update_data, commit=False
         )
+        if updated_transaction_id is not None:
+            update_status = UpdateStatus.UPDATED
 
         # Update the lines in the DB
-        for vl in validated_create_model.lines:
-            if vl.id_ not in tu_line_ids:
-                continue
-            data = vl.model_dump(exclude_unset=True)
+        for tu_line in tu_lines:
+            data = tu_line.model_dump(exclude_unset=True)
             line_orm: TransactionLineORM = [
-                line for line in t_orm.lines if line.id_ == vl.id_
+                line for line in t_orm.lines if line.id_ == tu_line.id_
             ][0]
-            await self.line_crud.update(self.db, line_orm, data, commit=False)
+            updated_line_id: int | None = await self.line_crud.update(
+                self.db, line_orm, data, commit=False
+            )
+            if updated_line_id is not None and update_status != UpdateStatus.UPDATED:
+                update_status = UpdateStatus.REQUIRED
 
         # Update the tags in the DB
-        if validated_create_model.tag_ids:
+        if tu.tag_ids and set(tu.tag_ids).issubset({tag.id_ for tag in t_orm.tags}):
             await self.crud.update_transaction_tags(
                 db_session=self.db,
                 transaction_id=transaction_id,
                 existing_tag_ids=[tag.id_ for tag in t_orm.tags],
-                new_tag_ids=validated_create_model.tag_ids,
+                new_tag_ids=tu.tag_ids,
                 commit=False,
             )
+            if update_status != UpdateStatus.UPDATED:
+                update_status = UpdateStatus.REQUIRED
+
+        if update_status == UpdateStatus.REQUIRED:
+            await self.crud.mark_updated(self.db, t_orm, commit=False)
 
         await self.crud.commit(self.db)
 
-        return await self.get_transaction_by_id(updated_transaction_id)
+        return await self.get_transaction_by_id(transaction_id)
 
     async def delete_transaction(self, transaction_id: int, perm: bool = False) -> None:
-        pass
+        transaction_orm: TransactionORM = await self._get_transaction_orm_by_id(
+            transaction_id, perm
+        )
+
+        # Transaction lines and the transaction_tags records will be cascaded if perm
+        await self.crud.delete(self.db, transaction_orm, perm)
+
+        if not perm:
+            # TODO: Better introduce delete_multiple in CRUD
+            for line in transaction_orm.lines:
+                await self.line_crud.delete(self.db, line, perm=False)

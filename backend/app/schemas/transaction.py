@@ -1,6 +1,7 @@
 import datetime as dt
 from decimal import Decimal
 from enum import Enum
+from typing import Sequence
 
 from pydantic import (
     BaseModel,
@@ -22,41 +23,68 @@ MAX_PRECISION = settings.NUMERIC_PRECISION
 MAX_SCALE = settings.NUMERIC_SCALE
 
 
-class _Unset:
-    pass
-
-
-UNSET = _Unset()
-
-
 class TransactionType(str, Enum):
     INCOME = "income"
     EXPENSE = "expense"
     TRANSFER = "transfer"
     EXCHANGE = "exchange"
-    INITIAL = "initial"
     CORRECTION = "correction"
     REFUND = "refund"
 
 
-def _validate_tag_ids(tag_ids: list[int]) -> list[int]:
-    # Ensure uniqueness
-    tag_ids = list(dict.fromkeys(tag_ids))
-    if len(tag_ids) > 100:
-        raise ValueError("Cannot assign more than 100 tags to a transaction")
+def _validate_lines(
+    type_: TransactionType, lines: Sequence["TransactionLineBase"]
+) -> None:
+    for line in lines:
+        if line.account_id is None or line.amount is None:
+            raise ValueError(
+                (
+                    "Account ID and amount cannot be None "
+                    "for the purpose of lines validation"
+                )
+            )
 
-    return tag_ids
+    if type_ == TransactionType.CORRECTION and len(lines) != 1:
+        raise ValueError(
+            (
+                "There should be exacly one transaction line for a transaction "
+                f"of type '{type_.value}'; got {len(lines)}"
+            )
+        )
+
+    if type_ != TransactionType.CORRECTION:
+        if len(lines) != 2:
+            raise ValueError(
+                (
+                    "There should be exacly two transaction lines for a transaction "
+                    f"of type '{type_.value}'; got {len(lines)}"
+                )
+            )
+        lines.sort(key=lambda x: x.amount)  # type: ignore
+
+        if not (lines[0].amount < 0 and lines[1].amount > 0):  # type: ignore
+            raise ValueError(
+                "Amounts in transaction lines shall be with opposite signs"
+            )
+
+        if lines[0].account_id == lines[1].account_id:
+            raise ValueError(
+                "Cannot credit the amount to the same account it is debited from"
+            )
 
 
-class TransactionLineCreate(BaseModel):
-    id_: PositiveInt | None = Field(None, validation_alias="id")
-    transaction_id: PositiveInt | None = None
-    account_id: PositiveInt
-    amount: Decimal
+class TransactionLineBase(BaseModel):
+    id_: PositiveInt | None
+    transaction_id: PositiveInt | None
+    account_id: PositiveInt | None
+    amount: Decimal | None
 
     @field_validator("amount", mode="after")
     @classmethod
-    def validate_amount(cls, v: Decimal) -> Decimal:
+    def validate_amount(cls, v: Decimal | None) -> Decimal | None:
+        if v is None:
+            return None
+
         if v == 0:
             raise ValueError("Amount cannot be zero")
 
@@ -87,7 +115,42 @@ class TransactionLineCreate(BaseModel):
         return v
 
 
-class TransactionCreate(BaseModel):
+class TransactionLineCreate(TransactionLineBase):
+    id_: PositiveInt | None = Field(None, validation_alias="id")
+    transaction_id: PositiveInt | None = None
+    account_id: PositiveInt
+    amount: Decimal
+
+
+class TransactionLineUpdate(TransactionLineBase):
+    id_: PositiveInt = Field(..., validation_alias="id", exclude=True)
+    transaction_id: PositiveInt | None = Field(None, exclude=True)
+    account_id: PositiveInt | None = None
+    amount: Decimal | None = None
+
+
+class TransactionLineFull(TransactionLineBase):
+    id_: PositiveInt = Field(..., validation_alias="id")
+    transaction_id: PositiveInt
+    account_id: PositiveInt
+    amount: Decimal
+
+
+class TransactionValidatorMixin:
+    @field_validator("tag_ids", mode="after")
+    @classmethod
+    def validate_tag_ids(cls, v: list[int] | None) -> list[int] | None:
+        if v is None:
+            return None
+
+        v = list(dict.fromkeys(v))
+        if len(v) > 100:
+            raise ValueError("Cannot assign more than 100 tags to a transaction")
+
+        return v
+
+
+class TransactionCreate(TransactionValidatorMixin, BaseModel):
     type_: TransactionType = Field(..., validation_alias="type")
     date: dt.date = dt.date.today()
     comment: StrippedStr | None = Field(None, min_length=1, max_length=1000)
@@ -95,82 +158,41 @@ class TransactionCreate(BaseModel):
     lines: list[TransactionLineCreate] = Field(..., exclude=True)
     tag_ids: list[PositiveInt] = Field([], exclude=True)
 
-    @field_validator("lines", mode="after")
-    @classmethod
-    def validate_lines(
-        cls, v: list[TransactionLineCreate]
-    ) -> list[TransactionLineCreate]:
-        v.sort(key=lambda x: x.amount)
-
-        if not (v[0].amount < 0 and v[1].amount > 0):
-            raise ValueError(
-                "Amounts in transaction lines shall be with opposite signs"
-            )
-
-        if v[0].account_id == v[1].account_id:
-            raise ValueError(
-                "Cannot credit the amount to the same account it is debited from"
-            )
-
-        return v
-
-    @field_validator("tag_ids", mode="after")
-    @classmethod
-    def validate_tag_ids(cls, v: list[int]) -> list[int]:
-        return _validate_tag_ids(v)
-
     @model_validator(mode="after")
-    def validate_line_count(self) -> Self:
-        single_line_types = (TransactionType.INITIAL, TransactionType.CORRECTION)
-
-        if self.type_ in single_line_types and len(self.lines) != 1:
-            raise ValueError(
-                (
-                    "There should be exacly one transaction line for a transaction "
-                    f"of type '{self.type_.value}'; got {len(self.lines)}"
-                )
-            )
-
-        if self.type_ not in single_line_types and len(self.lines) != 2:
-            raise ValueError(
-                (
-                    "There should be exacly two transaction lines for a transaction "
-                    f"of type '{self.type_.value}'; got {len(self.lines)}"
-                )
-            )
-
+    def validate_lines(self) -> Self:
+        _validate_lines(self.type_, self.lines)
         return self
 
 
-class TransactionLineUpdate(BaseModel):
-    id_: PositiveInt = Field(..., validation_alias="id")
-    account_id: PositiveInt | None = None
-    amount: Decimal | None = None
-
-
-class TransactionUpdate(BaseModel):
+class TransactionUpdate(TransactionValidatorMixin, BaseModel):
     type_: TransactionType | None = Field(None, validation_alias="type")
     date: dt.date | None = None
-    comment: StrippedStr | None | _Unset = Field(UNSET, max_length=1000)
+    comment: StrippedStr | None = Field(None, max_length=1000)
     is_template: bool | None = None
     lines: list[TransactionLineUpdate] | None = Field(None, exclude=True)
+    full_lines: list[TransactionLineFull] | None = Field(None, exclude=True)
     tag_ids: list[int] | None = Field(None, exclude=True)
 
-    @field_validator("tag_ids", mode="after")
-    @classmethod
-    def validate_tag_ids(cls, v: list[int] | None) -> list[int] | None:
-        if v is None:
-            return None
-
-        return _validate_tag_ids(v)
+    model_config = ConfigDict(validate_assignment=True)
 
     @model_validator(mode="after")
     def check_at_least_one_field_set(self) -> Self:
-        if all(value is None for value in self.model_dump().values()):
+        if not self.model_dump(exclude_unset=True):
             raise ValueError("At least one field must be set")
         return self
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    @model_validator(mode="after")
+    def validate_full_lines(self) -> Self:
+        if self.full_lines is None:
+            return self
+
+        if self.type_ is None:
+            raise ValueError(
+                "Transaction type shall be set when validating the full lines"
+            )
+
+        _validate_lines(self.type_, self.full_lines)
+        return self
 
 
 class TransactionLineResponse(BaseModel):

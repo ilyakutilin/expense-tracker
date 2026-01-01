@@ -159,9 +159,32 @@ class CRUDBase(Generic[ModelType]):
         data: dict[str, Any],
         *,
         commit: bool = True,
-    ) -> int:
+    ) -> int | None:
         for field, value in data.items():
             setattr(orm_obj, field, value)
+
+        is_modified: bool = db_session.is_modified(orm_obj)
+
+        try:
+            if commit:
+                await db_session.commit()
+            else:
+                await db_session.flush()
+
+            return orm_obj.id_ if is_modified else None
+
+        except SQLAlchemyError:
+            await db_session.rollback()
+            raise
+
+    async def mark_updated(
+        self,
+        db_session: AsyncSession,
+        orm_obj: ModelType,
+        *,
+        commit: bool = True,
+    ) -> int:
+        orm_obj.updated_at = func.now()
 
         try:
             if commit:
@@ -176,13 +199,18 @@ class CRUDBase(Generic[ModelType]):
             raise
 
     async def delete(
-        self, db_session: AsyncSession, obj_orm: ModelType, perm: bool = False
+        # TODO: Maybe just ID instead of ORM object?
+        self,
+        db_session: AsyncSession,
+        obj_orm: ModelType,
+        perm: bool = False,
     ) -> None:
         try:
             if perm:
                 await db_session.delete(obj_orm)
             else:
                 obj_orm.is_deleted = True
+                obj_orm.deleted_at = func.now()
             await db_session.commit()
 
         except SQLAlchemyError:
