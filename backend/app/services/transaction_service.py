@@ -10,8 +10,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
-from app.filters.base import FilterManager
-from app.filters.transaction import TransactionFilterParams, transaction_filter_manager
+from app.filters.transaction import TransactionFilterParams
 from app.models.transaction import TransactionLineORM, TransactionORM
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import (
@@ -95,15 +94,15 @@ class TransactionService:
     async def get_all_transactions(
         self,
         filter_params: TransactionFilterParams,
-        filter_manager: FilterManager = transaction_filter_manager,
         include_deleted: bool = False,
     ) -> PaginatedResponse[TransactionResponse]:
-        conditions = filter_manager.build_conditions(filter_params)
+        conditions = filter_params.manager.build_conditions(filter_params)
 
-        transaction_orms, total_count = await self.crud.get_all_transactions(
+        transaction_orms, total_count = await self.crud.get_all(
             db_session=self.db,
-            include_deleted=include_deleted,
             filter_conditions=conditions,
+            include_deleted=include_deleted,
+            unique=True,
         )
         transactions = [TransactionResponse.model_validate(t) for t in transaction_orms]
 
