@@ -1,11 +1,11 @@
 from typing import Any, Generic, TypeVar
 
-from fastapi_filter.contrib.sqlalchemy import Filter
-from sqlalchemy import func, select
+from sqlalchemy import ScalarResult, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.strategy_options import _AbstractLoad
 
+from app.filters.base import FilterConditions
 from app.models.base import BaseORM
 
 ModelType = TypeVar("ModelType", bound="BaseORM")
@@ -79,35 +79,44 @@ class CRUDBase(Generic[ModelType]):
     async def get_all(
         self,
         db_session: AsyncSession,
+        filter_conditions: FilterConditions,
         include_deleted: bool = False,
-        filter_: Filter | None = None,
-        page: int = 1,
-        page_size: int = 20,
+        unique: bool = False,
     ) -> tuple[list[ModelType], int]:
         stmt = select(self.model)
+        count_stmt = select(func.count(self.model.id_))
 
         if not include_deleted:
             stmt = stmt.where(self.model.is_active)
+            count_stmt = count_stmt.where(self.model.is_active)
 
-        if filter_:
-            stmt = filter_.filter(stmt)
-            stmt = filter_.sort(stmt)
+        if filter_conditions.has_filters():
+            for condition in filter_conditions.where_clauses:
+                stmt = stmt.where(condition)
+                count_stmt = count_stmt.where(condition)
+
+        total_count_result = await db_session.execute(count_stmt)
+        total_count = total_count_result.scalar_one()
 
         stmt = stmt.options(*self._get_options())
 
-        total: int | None = None
-        offset = (page - 1) * page_size
+        if filter_conditions.has_ordering():
+            for order_clause in filter_conditions.order_by_clauses:
+                stmt = stmt.order_by(order_clause)
 
-        count_query = select(func.count()).select_from(self.model)
-        total_result = await db_session.execute(count_query)
-        total = total_result.scalar_one()
+        if filter_conditions.has_pagination():
+            offset, limit = filter_conditions.offset_limit
+            stmt = stmt.offset(offset).limit(limit)
 
-        stmt = stmt.offset(offset).limit(page_size)
+        stmt = stmt.options(*self._get_options())
 
         result = await db_session.execute(stmt)
-        accounts = list(result.scalars().all())
+        scalar_result: ScalarResult[ModelType] = result.scalars()
+        if unique:
+            scalar_result = scalar_result.unique()
+        orm_objs = list(scalar_result.all())
 
-        return accounts, total
+        return orm_objs, total_count
 
     async def create(
         self,
