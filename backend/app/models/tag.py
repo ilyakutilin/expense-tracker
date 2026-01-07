@@ -5,25 +5,25 @@ from sqlalchemy import Index, Text, func, select, text
 from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.models.base import BaseFilter, BaseORM
-from app.models.operation import operation_tag
+from app.models.transaction import transaction_tag
 
 if TYPE_CHECKING:
-    from app.models.operation import OperationORM
+    from app.models.transaction import TransactionORM
 
 
 class TagORM(BaseORM):
     name: Mapped[str] = mapped_column(Text)
 
-    operations: Mapped[list["OperationORM"]] = relationship(
-        "OperationORM",
-        secondary=operation_tag,
+    transactions: Mapped[list["TransactionORM"]] = relationship(
+        "TransactionORM",
+        secondary=transaction_tag,
         back_populates="tags",
     )
 
-    operations_count: Mapped[int] = column_property(
-        select(func.count(operation_tag.c.tag_id))
-        .where(operation_tag.c.tag_id == BaseORM.id_)
-        .correlate_except(operation_tag)
+    transactions_count: Mapped[int] = column_property(
+        select(func.count(transaction_tag.c.tag_id))
+        .where(transaction_tag.c.tag_id == BaseORM.id_)
+        .correlate_except(transaction_tag)
         .scalar_subquery()
     )
 
@@ -55,7 +55,7 @@ class TagFilter(BaseFilter):
             "name",
             "created_at",
             "updated_at",
-            "operations_count",
+            "transactions_count",
         ]
 
         for field_name in value:

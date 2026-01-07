@@ -1,10 +1,9 @@
-from sqlalchemy import and_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import _AbstractLoad
 
 from app.crud.base import CRUDBase
-from app.models import AccountORM, CurrencyORM
+from app.models.account import AccountORM
+from app.models.currency import CurrencyORM
 
 
 class CRUDAccount(CRUDBase[AccountORM]):
@@ -18,17 +17,6 @@ class CRUDAccount(CRUDBase[AccountORM]):
                 CurrencyORM.id_, CurrencyORM.code, CurrencyORM.symbol
             ),
         )
-
-    async def get_account_by_name(
-        self,
-        db_session: AsyncSession,
-        name: str,
-    ) -> AccountORM | None:
-        query = select(AccountORM).where(
-            and_(AccountORM.name == name, AccountORM.is_active)
-        )
-        result = await db_session.execute(query)
-        return result.scalar_one_or_none()
 
 
 account_crud = CRUDAccount(AccountORM)

@@ -103,13 +103,14 @@ class ReferentialIntergrityError(AppException):
 
 # Database exceptions
 
-# class DatabaseError(AppException):
-#     def __init__(self, message: str = "Database error", detail: Any = None):
-#         super().__init__(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             message=message,
-#             detail=detail,
-#         )
+
+class DatabaseError(AppException):
+    def __init__(self, message: str = "Database error", detail: Any = None):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message=message,
+            detail=detail,
+        )
 
 
 class CodeError(Exception):

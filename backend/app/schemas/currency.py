@@ -6,14 +6,16 @@ from pydantic import (
     model_serializer,
 )
 
+from app.schemas import StrippedStr
+
 
 class CurrencyCreate(BaseModel):
-    code: str = Field(..., min_length=3, max_length=5)
-    symbol: str | None = Field(None, min_length=1, max_length=1)
+    code: StrippedStr = Field(..., min_length=3, max_length=5)
+    symbol: StrippedStr | None = Field(None, min_length=1, max_length=1)
 
 
 class CurrencyUpdate(CurrencyCreate):
-    code: str | None = Field(None, min_length=3, max_length=5)
+    code: StrippedStr | None = Field(None, min_length=3, max_length=5)
 
 
 class CurrencyResponse(CurrencyCreate):

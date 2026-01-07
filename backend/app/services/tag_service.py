@@ -20,13 +20,11 @@ class TagService:
     async def _check_name_exists(
         self, name: str, include_deleted: bool = False
     ) -> None:
-        existing_id: int | None = await self.crud.exists_by_name(
-            self.db, name, include_deleted
-        )
-        if existing_id:
+        exists: bool = await self.crud.exists(self.db, include_deleted, name=name)
+        if exists:
             raise exc.ConflictError(
                 message=f"Tag with name '{name}' already exists",
-                detail={"id": existing_id, "name": name},
+                detail={"name": name},
             )
 
     async def _get_tag_orm_by_id(
@@ -74,7 +72,15 @@ class TagService:
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
         await self._check_name_exists(tag_create.name)
         tag_data: dict[str, Any] = tag_create.model_dump()
-        tag_orm: TagORM = await self.crud.create(self.db, tag_data)
+        tag_id: int = await self.crud.create(self.db, tag_data, commit=True)
+        tag_orm: TagORM | None = await self.crud.get_by_id(
+            self.db, tag_id, include_deleted=False
+        )
+        if not tag_orm:
+            raise exc.DatabaseError(
+                message=("Created tag could not be fetched from the database"),
+                detail={"id": tag_id, "name": tag_create.name},
+            )
         return TagResponse.model_validate(tag_orm)
 
     async def update_tag(self, tag_id: int, tag_update: TagCreateUpdate) -> TagResponse:
@@ -84,10 +90,10 @@ class TagService:
 
         tag_data: dict[str, Any] = tag_update.model_dump()
 
-        updated_tag: TagORM = await self.crud.update(
-            db_session=self.db, obj_orm=tag_orm, obj_data=tag_data
+        updated_tag_id: int = await self.crud.update(
+            db_session=self.db, orm_obj=tag_orm, data=tag_data
         )
-        return await self.get_tag_by_id(updated_tag.id_)
+        return await self.get_tag_by_id(updated_tag_id)
 
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)
