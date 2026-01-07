@@ -33,6 +33,16 @@ async def get_all_currencies(
     return await currency_service.get_all_currencies()
 
 
+@router.get(
+    "/{currency_id}", response_model=CurrencyResponse, status_code=status.HTTP_200_OK
+)
+async def get_currency(
+    currency_id: int,
+    currency_service: CurrencyService = Depends(get_currency_service),
+) -> CurrencyResponse:
+    return await currency_service.get_currency(currency_id)
+
+
 @router.delete("/{currency_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_currency(
     currency_id: int,
