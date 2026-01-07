@@ -1,3 +1,4 @@
+import math
 from typing import Any
 
 from sqlalchemy.ext.asyncio import (
@@ -6,8 +7,10 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
+from app.filters.currency import CurrencyFilterParams
 from app.models.currency import CurrencyORM
 from app.schemas import currency as schemas
+from backend.app.schemas.pagination import PaginatedResponse
 
 
 class CurrencyService:
@@ -93,7 +96,27 @@ class CurrencyService:
         currency_orm: CurrencyORM = await self._get_currency_orm(currency_id)
         return schemas.CurrencyResponse.model_validate(currency_orm)
 
-    async def get_all_currencies(self) -> list[schemas.CurrencyResponse]:
-        # TODO: Change to paginated response
-        currencies, _ = await self.crud.get_all(self.db)
-        return [schemas.CurrencyResponse.model_validate(c) for c in currencies]
+    async def get_all_currencies(
+        self,
+        filter_params: CurrencyFilterParams,
+        include_deleted: bool = False,
+    ) -> PaginatedResponse[schemas.CurrencyResponse]:
+        conditions = filter_params.manager.build_conditions(filter_params)
+
+        currency_orms, total_count = await self.crud.get_all(
+            db_session=self.db,
+            filter_conditions=conditions,
+            include_deleted=include_deleted,
+            unique=False,
+        )
+        currencies = [schemas.CurrencyResponse.model_validate(c) for c in currency_orms]
+
+        return PaginatedResponse(
+            total=total_count,
+            page=filter_params.page,
+            page_size=filter_params.page_size,
+            total_pages=math.ceil(total_count / filter_params.page_size)
+            if total_count > 0
+            else 0,
+            items=currencies,
+        )

@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.api.deps import get_currency_service
+from app.filters.currency import CurrencyFilterParams
 from app.schemas.currency import CurrencyCreate, CurrencyResponse, CurrencyUpdate
+from app.schemas.pagination import PaginatedResponse
 from app.services.currency_service import CurrencyService
 
 router = APIRouter()
@@ -29,8 +31,14 @@ async def update_currency(
 @router.get("/", response_model=list[CurrencyResponse], status_code=status.HTTP_200_OK)
 async def get_all_currencies(
     currency_service: CurrencyService = Depends(get_currency_service),
-) -> list[CurrencyResponse]:
-    return await currency_service.get_all_currencies()
+    filter_params: CurrencyFilterParams = Depends(),
+    incl_deleted: bool = Query(
+        default=False, description="Include currencies in trash"
+    ),
+) -> PaginatedResponse[CurrencyResponse]:
+    return await currency_service.get_all_currencies(
+        filter_params=filter_params, include_deleted=incl_deleted
+    )
 
 
 @router.get(
