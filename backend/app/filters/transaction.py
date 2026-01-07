@@ -16,33 +16,6 @@ from app.models.transaction import TransactionLineORM, TransactionORM, transacti
 from app.schemas.transaction import TransactionType
 
 
-class TransactionFilterParams(BaseFilterParams):
-    """Filter parameters for transactions"""
-
-    # Direct transaction fields
-    type_: TransactionType | None = Field(None, alias="type")
-    date_lt: date | None = None
-    date_lte: date | None = None
-    date_gt: date | None = None
-    date_gte: date | None = None
-    comment: str | None = None
-    is_template: bool | None = None
-
-    # Transaction line filters (related)
-    account_id: int | None = None
-    account_id_in: str | None = None  # Comma-separated
-    amount_lt: Decimal | None = None
-    amount_lte: Decimal | None = None
-    amount_gt: Decimal | None = None
-    amount_gte: Decimal | None = None
-
-    # Tag filters (many-to-many)
-    tag_ids_in: str | None = None  # Comma-separated
-    tag_ids_all: str | None = None  # Comma-separated - must have ALL these tags
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
 def parse_comma_separated_ints(value: str) -> list[int]:
     """Parse comma-separated string to list of integers"""
     return [int(x.strip()) for x in value.split(",") if x.strip()]
@@ -160,3 +133,34 @@ transaction_filter_manager = FilterManager(
         SearchField(column=TransactionORM.comment),
     ],
 )
+
+
+class TransactionFilterParams(BaseFilterParams):
+    """Filter parameters for transactions"""
+
+    # Direct transaction fields
+    type_: TransactionType | None = Field(None, alias="type")
+    date_lt: date | None = None
+    date_lte: date | None = None
+    date_gt: date | None = None
+    date_gte: date | None = None
+    comment: str | None = None
+    is_template: bool | None = None
+
+    # Transaction line filters (related)
+    account_id: int | None = None
+    account_id_in: str | None = None  # Comma-separated
+    amount_lt: Decimal | None = None
+    amount_lte: Decimal | None = None
+    amount_gt: Decimal | None = None
+    amount_gte: Decimal | None = None
+
+    # Tag filters (many-to-many)
+    tag_ids_in: str | None = None  # Comma-separated
+    tag_ids_all: str | None = None  # Comma-separated - must have ALL these tags
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @property
+    def manager(self) -> FilterManager:
+        return transaction_filter_manager
