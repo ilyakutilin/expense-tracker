@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, TypeVar
@@ -46,7 +47,7 @@ class FilterConditions:
         return bool(self.offset_limit)
 
 
-class BaseFilterParams(BaseModel):
+class BaseFilterParams(BaseModel, ABC):
     """Base class for filter parameters"""
 
     # Pagination
@@ -81,6 +82,11 @@ class BaseFilterParams(BaseModel):
             else:
                 result.append((field, "asc"))
         return result
+
+    @property
+    @abstractmethod
+    def manager(self) -> "FilterManager":
+        pass
 
 
 class FilterField:
