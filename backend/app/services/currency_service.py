@@ -55,7 +55,7 @@ class CurrencyService:
     async def update_currency(
         self, currency_id: int, currency_update: schemas.CurrencyUpdate
     ) -> schemas.CurrencyResponse:
-        currency: CurrencyORM = await self._get_currency_orm(currency_id)
+        currency_orm: CurrencyORM = await self._get_currency_orm(currency_id)
 
         if currency_update.code:
             await self._check_code_exists(currency_update.code)
@@ -66,19 +66,23 @@ class CurrencyService:
                 message="No fields to update", detail={"id": currency_id}
             )
 
-        updated_currency_id: int = await self.crud.update(
-            db_session=self.db, orm_obj=currency, data=currency_data
+        updated_currency_id: int | None = await self.crud.update(
+            db_session=self.db, orm_obj=currency_orm, data=currency_data
         )
-        updated_currency: CurrencyORM | None = await self.crud.get_by_id(
-            self.db, updated_currency_id
-        )
-        if not updated_currency:
-            raise exc.DatabaseError(
-                message=("Updated currency could not be fetched from the database"),
-                detail={"id": currency_id},
+        updated_currency_orm: CurrencyORM | None = None
+        if updated_currency_id:
+            updated_currency_orm: CurrencyORM | None = await self.crud.get_by_id(
+                self.db, updated_currency_id
             )
+            if not updated_currency_orm:
+                raise exc.DatabaseError(
+                    message=("Updated currency could not be fetched from the database"),
+                    detail={"id": currency_id},
+                )
+        else:
+            updated_currency_orm = currency_orm
 
-        return schemas.CurrencyResponse.model_validate(updated_currency)
+        return schemas.CurrencyResponse.model_validate(updated_currency_orm)
 
     async def delete_currency(self, currency_id: int, perm: bool = False) -> None:
         currency: CurrencyORM = await self._get_currency_orm(currency_id, perm)
