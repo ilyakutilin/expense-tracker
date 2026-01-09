@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
-from fastapi_filter import FilterDepends
 
 from app.api.deps import get_account_service
-from app.models.account import AccountFilter
+from app.filters.account import AccountFilterParams
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
 from app.schemas.pagination import PaginatedResponse
 from app.services import AccountService
@@ -27,16 +26,12 @@ async def get_one_account(
 )
 async def get_all_accounts(
     account_service: AccountService = Depends(get_account_service),
-    account_filter: AccountFilter = FilterDepends(AccountFilter, by_alias=True),
+    filter_params: AccountFilterParams = Depends(),
     incl_deleted: bool = Query(default=False, description="Include accounts in trash"),
-    page: int = Query(default=1, ge=1, description="Page number"),
-    page_size: int = Query(default=20, ge=1, le=100, description="Items per page"),
 ) -> PaginatedResponse[AccountResponse]:
     return await account_service.get_all_accounts(
+        filter_params=filter_params,
         include_deleted=incl_deleted,
-        filter_=account_filter,
-        page=page,
-        page_size=page_size,
     )
 
 
