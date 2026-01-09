@@ -1,13 +1,13 @@
 import math
 from typing import Any
 
-from fastapi_filter.contrib.sqlalchemy import Filter
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 
 from app import crud
 from app.core import exceptions as exc
+from app.filters.account import AccountFilterParams
 from app.models.account import AccountORM
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
 from app.schemas.pagination import PaginatedResponse
@@ -84,24 +84,29 @@ class AccountService:
 
     async def get_all_accounts(
         self,
+        filter_params: AccountFilterParams,
         include_deleted: bool = False,
-        filter_: Filter | None = None,
-        page: int = 1,
-        page_size: int = 20,
     ) -> PaginatedResponse[AccountResponse]:
-        accounts_orm, total = await self.crud.get_all(
+        conditions = filter_params.manager.build_conditions(filter_params)
+
+        account_orms, total_count = await self.crud.get_all(
             db_session=self.db,
+            filter_conditions=conditions,
             include_deleted=include_deleted,
-            filter_=filter_,
-            page=page,
-            page_size=page_size,
+            unique=True,
         )
-        accounts = [AccountResponse.model_validate(a) for a in accounts_orm]
+        accounts = [AccountResponse.model_validate(t) for t in account_orms]
+
+        if total_count is None:
+            raise exc.CodeError("Total count of accounts cannot be None")
+
         return PaginatedResponse(
-            total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=math.ceil(total / page_size) if total > 0 else 0,
+            total=total_count,
+            page=filter_params.page,
+            page_size=filter_params.page_size,
+            total_pages=math.ceil(total_count / filter_params.page_size)
+            if total_count > 0
+            else 0,
             items=accounts,
         )
 
@@ -142,10 +147,22 @@ class AccountService:
                 message="No fields to update", detail={"id": account_id}
             )
 
-        updated_account_id: int = await self.crud.update(
+        updated_account_id: int | None = await self.crud.update(
             db_session=self.db, orm_obj=account_orm, data=account_data
         )
-        return await self.get_account_by_id(updated_account_id)
+        updated_account_orm: AccountORM | None = None
+        if updated_account_id:
+            updated_account_orm: AccountORM | None = await self.crud.get_by_id(
+                self.db, updated_account_id
+            )
+            if not updated_account_orm:
+                raise exc.DatabaseError(
+                    message=("Updated account could not be fetched from the database"),
+                    detail={"id": account_id},
+                )
+        else:
+            updated_account_orm = account_orm
+        return AccountResponse.model_validate(updated_account_orm)
 
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
         account: AccountORM = await self._get_account_orm_by_id(account_id, perm)
