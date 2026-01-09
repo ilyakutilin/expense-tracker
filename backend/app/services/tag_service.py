@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
-from app.models.tag import TagFilter, TagORM
+from app.filters.tag import TagFilterParams
+from app.models.tag import TagORM
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.tag import TagCreateUpdate, TagResponse
 
@@ -48,24 +49,29 @@ class TagService:
 
     async def get_all_tags(
         self,
+        filter_params: TagFilterParams,
         include_deleted: bool = False,
-        filter_: TagFilter | None = None,
-        page: int = 1,
-        page_size: int = 20,
     ) -> PaginatedResponse[TagResponse]:
-        tags_orm, total = await self.crud.get_all(
+        conditions = filter_params.manager.build_conditions(filter_params)
+
+        tag_orms, total_count = await self.crud.get_all(
             db_session=self.db,
+            filter_conditions=conditions,
             include_deleted=include_deleted,
-            filter_=filter_,
-            page=page,
-            page_size=page_size,
+            unique=True,
         )
-        tags = [TagResponse.model_validate(t) for t in tags_orm]
+        tags = [TagResponse.model_validate(t) for t in tag_orms]
+
+        if total_count is None:
+            raise exc.CodeError("Total count of tags cannot be None")
+
         return PaginatedResponse(
-            total=total,
-            page=page,
-            page_size=page_size,
-            total_pages=math.ceil(total / page_size) if total > 0 else 0,
+            total=total_count,
+            page=filter_params.page,
+            page_size=filter_params.page_size,
+            total_pages=math.ceil(total_count / filter_params.page_size)
+            if total_count > 0
+            else 0,
             items=tags,
         )
 
@@ -90,10 +96,22 @@ class TagService:
 
         tag_data: dict[str, Any] = tag_update.model_dump()
 
-        updated_tag_id: int = await self.crud.update(
+        updated_tag_id: int | None = await self.crud.update(
             db_session=self.db, orm_obj=tag_orm, data=tag_data
         )
-        return await self.get_tag_by_id(updated_tag_id)
+        updated_tag_orm: TagORM | None = None
+        if updated_tag_id:
+            updated_tag_orm: TagORM | None = await self.crud.get_by_id(
+                self.db, updated_tag_id
+            )
+            if not updated_tag_orm:
+                raise exc.DatabaseError(
+                    message=("Updated account could not be fetched from the database"),
+                    detail={"id": tag_id},
+                )
+        else:
+            updated_tag_orm = tag_orm
+        return TagResponse.model_validate(updated_tag_orm)
 
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)
