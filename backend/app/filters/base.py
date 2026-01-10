@@ -220,6 +220,7 @@ class FilterManager:
                     where_clauses.append(condition)
 
         # Build search conditions
+        # TODO: Implement multiple searches like ?search=this&search=that
         if params.search and self.search_fields:
             search_conditions = [
                 field.build_condition(params.search) for field in self.search_fields
