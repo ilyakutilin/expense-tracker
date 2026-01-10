@@ -28,7 +28,11 @@ async def update_currency(
     return await currency_service.update_currency(currency_id, currency_data)
 
 
-@router.get("/", response_model=list[CurrencyResponse], status_code=status.HTTP_200_OK)
+@router.get(
+    "/",
+    response_model=PaginatedResponse[CurrencyResponse],
+    status_code=status.HTTP_200_OK,
+)
 async def get_all_currencies(
     currency_service: CurrencyService = Depends(get_currency_service),
     filter_params: CurrencyFilterParams = Depends(),

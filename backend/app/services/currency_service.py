@@ -10,7 +10,7 @@ from app.core import exceptions as exc
 from app.filters.currency import CurrencyFilterParams
 from app.models.currency import CurrencyORM
 from app.schemas import currency as schemas
-from backend.app.schemas.pagination import PaginatedResponse
+from app.schemas.pagination import PaginatedResponse
 
 
 class CurrencyService:
