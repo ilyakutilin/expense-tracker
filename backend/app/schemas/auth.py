@@ -7,7 +7,8 @@ class UserRegister(BaseModel):
     """Schema for user registration."""
 
     email: EmailStr
-    password: SecretStr = Field(..., min_length=8, max_length=100)
+    password: SecretStr = Field(..., min_length=8, max_length=100, exclude=True)
+    password_hash: str | None = None
 
 
 class UserLogin(BaseModel):
