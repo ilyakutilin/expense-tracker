@@ -8,6 +8,7 @@ from app.models.base import BaseORM
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
     from app.models.transaction import TransactionLineORM
+    from app.models.user import UserORM
 
 
 class AccountORM(BaseORM):
@@ -18,6 +19,9 @@ class AccountORM(BaseORM):
     )
     currency_id: Mapped[int | None] = mapped_column(
         ForeignKey("currency.id", ondelete="RESTRICT"), index=True
+    )
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id", ondelete="SET NULL"), index=True
     )
 
     parent: Mapped["AccountORM | None"] = relationship(
@@ -45,9 +49,15 @@ class AccountORM(BaseORM):
         order_by="desc(TransactionLineORM.id_)",
     )
 
+    user: Mapped["UserORM | None"] = relationship(
+        "UserORM",
+        back_populates="accounts",
+    )
+
     __table_args__ = (
         Index(
-            "ix_account_unique_name_active",
+            "ix_account_unique_name_per_user_active",
+            "user_id",
             "name",
             unique=True,
             postgresql_where=(text("is_deleted = false")),
