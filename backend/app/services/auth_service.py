@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud
 from app.core import exceptions as exc
-from app.core.auth import (
+from app.core.auth.security import (
     create_access_token,
     get_password_hash,
     verify_password,
