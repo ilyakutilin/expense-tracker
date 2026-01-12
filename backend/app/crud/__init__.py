@@ -7,6 +7,7 @@ from app.crud.transaction import (
     transaction_crud,
     transaction_line_crud,
 )
+from app.crud.user import CRUDUser, user_crud
 
 __all__ = [
     "currency_crud",
@@ -14,9 +15,11 @@ __all__ = [
     "tag_crud",
     "transaction_crud",
     "transaction_line_crud",
+    "user_crud",
     "CRUDCurrency",
     "CRUDAccount",
     "CRUDTag",
     "CRUDTransaction",
     "CRUDTransactionLine",
+    "CRUDUser",
 ]
