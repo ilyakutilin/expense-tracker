@@ -58,6 +58,23 @@ class DBSettings(BaseSettings):
         )
 
 
+class AuthSettings(BaseSettings):
+    model_config = SETTINGS_MODEL_CONFIG.copy()
+    model_config["env_prefix"] = "auth_"
+
+    SECRET_KEY: str = ""  # Generate with: openssl rand -hex 32
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    @field_validator("SECRET_KEY", mode="after")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
+        if v == "":
+            raise ValueError("Please set the auth secret key")
+
+        return v
+
+
 class Settings(BaseSettings):
     model_config = SETTINGS_MODEL_CONFIG.copy()
 
@@ -73,6 +90,7 @@ class Settings(BaseSettings):
 
     log_settings: LogSettings = LogSettings()
     db_settings: DBSettings = DBSettings()
+    auth_settings: AuthSettings = AuthSettings()
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
