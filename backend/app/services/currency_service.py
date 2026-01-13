@@ -23,21 +23,26 @@ class CurrencyService:
         self, currency_id: int, include_deleted: bool = False
     ) -> CurrencyORM:
         currency: CurrencyORM | None = await self.crud.get_by_id(
-            self.db, obj_id=currency_id, include_deleted=include_deleted
+            self.db,
+            obj_id=currency_id,
+            user_id=self.user_id,
+            include_deleted=include_deleted,
         )
         if not currency:
             raise exc.NotFoundError(
                 message=f"Currency with id {currency_id} not found",
-                detail={"id": currency_id},
+                detail={"id": currency_id, "user_id": self.user_id},
             )
         return currency
 
     async def _check_code_exists(self, code: str) -> None:
-        currency: bool = await self.crud.exists(self.db, code=code)
+        currency: bool = await self.crud.exists(
+            self.db, user_id=self.user_id, code=code
+        )
         if currency:
             raise exc.ConflictError(
                 message=f"Currency with code '{code}' already exists",
-                detail={"code": code},
+                detail={"code": code, "user_id": self.user_id},
             )
 
     async def create_currency(
@@ -45,16 +50,21 @@ class CurrencyService:
     ) -> schemas.CurrencyResponse:
         await self._check_code_exists(currency_create.code)
         currency_data: dict[str, Any] = currency_create.model_dump()
+        currency_data["user_id"] = self.user_id
         currency_id: int = await self.crud.create(
             self.db, obj_data=currency_data, commit=True
         )
         currency_orm: CurrencyORM | None = await self.crud.get_by_id(
-            self.db, obj_id=currency_id, include_deleted=False
+            self.db, obj_id=currency_id, user_id=self.user_id, include_deleted=False
         )
         if not currency_orm:
             raise exc.DatabaseError(
                 message=("Created currency could not be fetched from the database"),
-                detail={"id": currency_id, "code": currency_create.code},
+                detail={
+                    "id": currency_id,
+                    "code": currency_create.code,
+                    "user_id": self.user_id,
+                },
             )
         return schemas.CurrencyResponse.model_validate(currency_orm)
 
@@ -78,12 +88,12 @@ class CurrencyService:
         updated_currency_orm: CurrencyORM | None = None
         if updated_currency_id:
             updated_currency_orm: CurrencyORM | None = await self.crud.get_by_id(
-                self.db, obj_id=updated_currency_id
+                self.db, obj_id=updated_currency_id, user_id=self.user_id
             )
             if not updated_currency_orm:
                 raise exc.DatabaseError(
                     message=("Updated currency could not be fetched from the database"),
-                    detail={"id": currency_id},
+                    detail={"id": currency_id, "user_id": self.user_id},
                 )
         else:
             updated_currency_orm = currency_orm
@@ -109,6 +119,7 @@ class CurrencyService:
         currency_orms, total_count = await self.crud.get_all(
             db_session=self.db,
             filter_conditions=conditions,
+            user_id=self.user_id,
             include_deleted=include_deleted,
             unique=False,
         )

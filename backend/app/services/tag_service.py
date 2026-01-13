@@ -23,24 +23,36 @@ class TagService:
         self, name: str, include_deleted: bool = False
     ) -> None:
         exists: bool = await self.crud.exists(
-            self.db, include_deleted=include_deleted, name=name
+            self.db,
+            user_id=self.user_id,
+            include_deleted=include_deleted,
+            name=name,
         )
         if exists:
             raise exc.ConflictError(
                 message=f"Tag with name '{name}' already exists",
-                detail={"name": name},
+                detail={
+                    "name": name,
+                    "user_id": self.user_id,
+                },
             )
 
     async def _get_tag_orm_by_id(
         self, tag_id: int, include_deleted: bool = False
     ) -> TagORM:
         tag_orm: TagORM | None = await self.crud.get_by_id(
-            self.db, obj_id=tag_id, include_deleted=include_deleted
+            self.db,
+            obj_id=tag_id,
+            user_id=self.user_id,
+            include_deleted=include_deleted,
         )
         if not tag_orm:
             raise exc.NotFoundError(
                 message=f"Tag with id {tag_id} not found",
-                detail={"id": tag_id},
+                detail={
+                    "id": tag_id,
+                    "user_id": self.user_id,
+                },
             )
         return tag_orm
 
@@ -60,6 +72,7 @@ class TagService:
         tag_orms, total_count = await self.crud.get_all(
             db_session=self.db,
             filter_conditions=conditions,
+            user_id=self.user_id,
             include_deleted=include_deleted,
             unique=True,
         )
@@ -81,6 +94,7 @@ class TagService:
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
         await self._check_name_exists(tag_create.name)
         tag_data: dict[str, Any] = tag_create.model_dump()
+        tag_data["user_id"] = self.user_id
         tag_id: int = await self.crud.create(self.db, obj_data=tag_data, commit=True)
         tag_orm: TagORM | None = await self.crud.get_by_id(
             self.db, obj_id=tag_id, include_deleted=False
@@ -88,7 +102,11 @@ class TagService:
         if not tag_orm:
             raise exc.DatabaseError(
                 message=("Created tag could not be fetched from the database"),
-                detail={"id": tag_id, "name": tag_create.name},
+                detail={
+                    "id": tag_id,
+                    "name": tag_create.name,
+                    "user_id": self.user_id,
+                },
             )
         return TagResponse.model_validate(tag_orm)
 
@@ -105,12 +123,15 @@ class TagService:
         updated_tag_orm: TagORM | None = None
         if updated_tag_id:
             updated_tag_orm: TagORM | None = await self.crud.get_by_id(
-                self.db, obj_id=updated_tag_id
+                self.db, obj_id=updated_tag_id, user_id=self.user_id
             )
             if not updated_tag_orm:
                 raise exc.DatabaseError(
                     message=("Updated account could not be fetched from the database"),
-                    detail={"id": tag_id},
+                    detail={
+                        "id": tag_id,
+                        "user_id": self.user_id,
+                    },
                 )
         else:
             updated_tag_orm = tag_orm
