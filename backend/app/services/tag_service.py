@@ -14,8 +14,9 @@ from app.schemas.tag import TagCreateUpdate, TagResponse
 
 
 class TagService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, user_id: int):
         self.db = db
+        self.user_id = user_id
         self.crud: crud.CRUDTag = crud.tag_crud
 
     async def _check_name_exists(

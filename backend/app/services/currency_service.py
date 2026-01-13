@@ -14,8 +14,9 @@ from app.schemas.pagination import PaginatedResponse
 
 
 class CurrencyService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, user_id: int):
         self.db = db
+        self.user_id = user_id
         self.crud: crud.CRUDCurrency = crud.currency_crud
 
     async def _get_currency_orm(

@@ -24,8 +24,9 @@ from app.schemas.transaction import (
 
 
 class TransactionService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, user_id: int):
         self.db = db
+        self.user_id = user_id
         self.crud: crud.CRUDTransaction = crud.transaction_crud
         self.line_crud: crud.CRUDTransactionLine = crud.transaction_line_crud
         self.account_crud: crud.CRUDAccount = crud.account_crud
