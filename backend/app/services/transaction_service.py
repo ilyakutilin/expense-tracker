@@ -111,7 +111,7 @@ class TransactionService:
         if total_count is None:
             raise exc.CodeError("Total count of transactions cannot be None")
 
-        return PaginatedResponse(
+        return PaginatedResponse[TransactionResponse](
             total=total_count,
             page=filter_params.page,
             page_size=filter_params.page_size,

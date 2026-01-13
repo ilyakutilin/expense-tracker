@@ -125,7 +125,7 @@ class CurrencyService:
         )
         currencies = [schemas.CurrencyResponse.model_validate(c) for c in currency_orms]
 
-        return PaginatedResponse(
+        return PaginatedResponse[schemas.CurrencyResponse](
             total=total_count,
             page=filter_params.page,
             page_size=filter_params.page_size,

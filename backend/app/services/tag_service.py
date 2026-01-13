@@ -81,7 +81,7 @@ class TagService:
         if total_count is None:
             raise exc.CodeError("Total count of tags cannot be None")
 
-        return PaginatedResponse(
+        return PaginatedResponse[TagResponse](
             total=total_count,
             page=filter_params.page,
             page_size=filter_params.page_size,
