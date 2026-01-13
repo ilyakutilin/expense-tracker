@@ -34,7 +34,7 @@ class AuthService:
         self, user_id: int, include_deleted: bool = False
     ) -> UserORM:
         user_orm: UserORM | None = await self.crud.get_by_id(
-            self.db, user_id, include_deleted
+            self.db, obj_id=user_id, include_deleted=include_deleted
         )
         if not user_orm:
             raise exc.NotFoundError(
@@ -49,10 +49,10 @@ class AuthService:
         hashed_password = get_password_hash(str(user_register.password))
         user_register.password_hash = hashed_password
         user_data: dict[str, Any] = user_register.model_dump()
-        user_id: int = await self.crud.create(self.db, user_data, commit=True)
+        user_id: int = await self.crud.create(self.db, obj_data=user_data, commit=True)
 
         user_orm: UserORM | None = await self.crud.get_by_id(
-            self.db, user_id, include_deleted=False
+            self.db, obj_id=user_id, include_deleted=False
         )
         if not user_orm:
             raise exc.DatabaseError(
