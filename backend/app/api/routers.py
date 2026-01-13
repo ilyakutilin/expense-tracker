@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.endpoints import (
     account_router,
+    auth_router,
     currency_router,
     tag_router,
     transaction_router,
@@ -14,3 +15,4 @@ main_router.include_router(tag_router, prefix="/tags", tags=["Tags"])
 main_router.include_router(
     transaction_router, prefix="/transactions", tags=["Transactions"]
 )
+main_router.include_router(auth_router, prefix="/auth", tags=["Auth"])

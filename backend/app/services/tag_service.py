@@ -14,30 +14,45 @@ from app.schemas.tag import TagCreateUpdate, TagResponse
 
 
 class TagService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, user_id: int):
         self.db = db
+        self.user_id = user_id
         self.crud: crud.CRUDTag = crud.tag_crud
 
     async def _check_name_exists(
         self, name: str, include_deleted: bool = False
     ) -> None:
-        exists: bool = await self.crud.exists(self.db, include_deleted, name=name)
+        exists: bool = await self.crud.exists(
+            self.db,
+            user_id=self.user_id,
+            include_deleted=include_deleted,
+            name=name,
+        )
         if exists:
             raise exc.ConflictError(
                 message=f"Tag with name '{name}' already exists",
-                detail={"name": name},
+                detail={
+                    "name": name,
+                    "user_id": self.user_id,
+                },
             )
 
     async def _get_tag_orm_by_id(
         self, tag_id: int, include_deleted: bool = False
     ) -> TagORM:
         tag_orm: TagORM | None = await self.crud.get_by_id(
-            self.db, tag_id, include_deleted
+            self.db,
+            obj_id=tag_id,
+            user_id=self.user_id,
+            include_deleted=include_deleted,
         )
         if not tag_orm:
             raise exc.NotFoundError(
                 message=f"Tag with id {tag_id} not found",
-                detail={"id": tag_id},
+                detail={
+                    "id": tag_id,
+                    "user_id": self.user_id,
+                },
             )
         return tag_orm
 
@@ -57,6 +72,7 @@ class TagService:
         tag_orms, total_count = await self.crud.get_all(
             db_session=self.db,
             filter_conditions=conditions,
+            user_id=self.user_id,
             include_deleted=include_deleted,
             unique=True,
         )
@@ -65,7 +81,7 @@ class TagService:
         if total_count is None:
             raise exc.CodeError("Total count of tags cannot be None")
 
-        return PaginatedResponse(
+        return PaginatedResponse[TagResponse](
             total=total_count,
             page=filter_params.page,
             page_size=filter_params.page_size,
@@ -78,14 +94,19 @@ class TagService:
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
         await self._check_name_exists(tag_create.name)
         tag_data: dict[str, Any] = tag_create.model_dump()
-        tag_id: int = await self.crud.create(self.db, tag_data, commit=True)
+        tag_data["user_id"] = self.user_id
+        tag_id: int = await self.crud.create(self.db, obj_data=tag_data, commit=True)
         tag_orm: TagORM | None = await self.crud.get_by_id(
-            self.db, tag_id, include_deleted=False
+            self.db, obj_id=tag_id, include_deleted=False
         )
         if not tag_orm:
             raise exc.DatabaseError(
                 message=("Created tag could not be fetched from the database"),
-                detail={"id": tag_id, "name": tag_create.name},
+                detail={
+                    "id": tag_id,
+                    "name": tag_create.name,
+                    "user_id": self.user_id,
+                },
             )
         return TagResponse.model_validate(tag_orm)
 
@@ -102,12 +123,15 @@ class TagService:
         updated_tag_orm: TagORM | None = None
         if updated_tag_id:
             updated_tag_orm: TagORM | None = await self.crud.get_by_id(
-                self.db, updated_tag_id
+                self.db, obj_id=updated_tag_id, user_id=self.user_id
             )
             if not updated_tag_orm:
                 raise exc.DatabaseError(
                     message=("Updated account could not be fetched from the database"),
-                    detail={"id": tag_id},
+                    detail={
+                        "id": tag_id,
+                        "user_id": self.user_id,
+                    },
                 )
         else:
             updated_tag_orm = tag_orm
@@ -116,4 +140,4 @@ class TagService:
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)
 
-        await self.crud.delete(self.db, tag_orm, perm)
+        await self.crud.delete(self.db, obj_orm=tag_orm, perm=perm)

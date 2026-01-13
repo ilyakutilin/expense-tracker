@@ -38,11 +38,11 @@ class BadRequestError(AppException):
         )
 
 
-# class UnauthorizedError(AppException):
-#     def __init__(self, message: str = "Unauthorized", detail: Any = None):
-#         super().__init__(
-#             status_code=status.HTTP_401_UNAUTHORIZED, message=message, detail=detail
-#         )
+class UnauthorizedError(AppException):
+    def __init__(self, message: str = "Unauthorized", detail: Any = None):
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED, message=message, detail=detail
+        )
 
 
 # class ForbiddenError(AppException):

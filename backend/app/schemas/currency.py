@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -24,7 +26,7 @@ class CurrencyResponse(CurrencyCreate):
     model_config = ConfigDict(from_attributes=True)
 
     @model_serializer(mode="wrap")
-    def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, int | str]:
+    def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         serialized = handler(self)
         key_order = ["id", "code", "symbol"]
         return {k: serialized[k] for k in key_order}

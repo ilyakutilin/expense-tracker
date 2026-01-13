@@ -24,19 +24,13 @@ from app.schemas.transaction import (
 
 
 class TransactionService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, user_id: int):
         self.db = db
+        self.user_id = user_id
         self.crud: crud.CRUDTransaction = crud.transaction_crud
         self.line_crud: crud.CRUDTransactionLine = crud.transaction_line_crud
         self.account_crud: crud.CRUDAccount = crud.account_crud
         self.tag_crud: crud.CRUDTag = crud.tag_crud
-
-    def _prevent_self_transfer(self, from_acc_id: int, to_acc_id: int) -> None:
-        if from_acc_id == to_acc_id:
-            raise exc.ReferentialIntergrityError(
-                message="From account and to account must be different",
-                detail={"from_acc_id": from_acc_id, "to_acc_id": to_acc_id},
-            )
 
     async def _check_referential_integrity(
         self, account_ids: list[int], tag_ids: list[int] | None
@@ -45,7 +39,7 @@ class TransactionService:
 
         if account_ids:
             existing_acc_ids: list[int] = await self.account_crud.exist_multiple(
-                self.db, account_ids
+                self.db, ids=account_ids, user_id=self.user_id
             )
             missing_acc_ids = [
                 aid for aid in account_ids if aid not in existing_acc_ids
@@ -55,13 +49,14 @@ class TransactionService:
 
         if tag_ids:
             existing_tag_ids: list[int] = await self.tag_crud.exist_multiple(
-                self.db, tag_ids
+                self.db, ids=tag_ids, user_id=self.user_id
             )
             missing_acc_ids = [tid for tid in tag_ids if tid not in existing_tag_ids]
             if missing_acc_ids:
                 detail["tag_ids"] = missing_acc_ids
 
         if detail:
+            detail["user_id"] = self.user_id
             raise exc.ReferentialIntergrityError(
                 message=(
                     "Referential integrity violation: no record(s) "
@@ -74,12 +69,18 @@ class TransactionService:
         self, transaction_id: int, include_deleted: bool = False
     ) -> TransactionORM:
         transaction_orm: TransactionORM | None = await self.crud.get_by_id(
-            self.db, transaction_id, include_deleted
+            self.db,
+            obj_id=transaction_id,
+            user_id=self.user_id,
+            include_deleted=include_deleted,
         )
         if not transaction_orm:
             raise exc.NotFoundError(
                 message=f"Transaction with id {transaction_id} not found",
-                detail={"id": transaction_id},
+                detail={
+                    "id": transaction_id,
+                    "user_id": self.user_id,
+                },
             )
         return transaction_orm
 
@@ -101,6 +102,7 @@ class TransactionService:
         transaction_orms, total_count = await self.crud.get_all(
             db_session=self.db,
             filter_conditions=conditions,
+            user_id=self.user_id,
             include_deleted=include_deleted,
             unique=True,
         )
@@ -109,7 +111,7 @@ class TransactionService:
         if total_count is None:
             raise exc.CodeError("Total count of transactions cannot be None")
 
-        return PaginatedResponse(
+        return PaginatedResponse[TransactionResponse](
             total=total_count,
             page=filter_params.page,
             page_size=filter_params.page_size,
@@ -125,14 +127,15 @@ class TransactionService:
             [from_.account_id, to.account_id], tc.tag_ids
         )
         transaction_data: dict[str, Any] = tc.model_dump()
+        transaction_data["user_id"] = self.user_id
         transaction_id: int = await self.crud.create(
-            self.db, transaction_data, commit=False
+            self.db, obj_data=transaction_data, commit=False
         )
 
         for line in tc.lines:
             line.transaction_id = transaction_id
         lines_data: list[dict[str, Any]] = [line.model_dump() for line in tc.lines]
-        await self.line_crud.create_multiple(self.db, lines_data, commit=False)
+        await self.line_crud.create_multiple(self.db, data=lines_data, commit=False)
 
         if tc.tag_ids:
             inserted_tag_ids = await self.crud.insert_transaction_tags(
@@ -153,12 +156,12 @@ class TransactionService:
         await self.crud.commit(self.db)
 
         transaction_orm: TransactionORM | None = await self.crud.get_by_id(
-            self.db, obj_id=transaction_id, include_deleted=False
+            self.db, obj_id=transaction_id, user_id=self.user_id, include_deleted=False
         )
         if not transaction_orm:
             raise exc.DatabaseError(
                 message=("Created transaction could not be fetched from the database"),
-                detail={"id": transaction_id},
+                detail={"id": transaction_id, "user_id": self.user_id},
             )
 
         return TransactionResponse.model_validate(transaction_orm)
@@ -294,7 +297,7 @@ class TransactionService:
         # Update the main transaction object in the DB
         update_data: dict[str, Any] = tu.model_dump(exclude_unset=True, by_alias=True)
         updated_transaction_id: int | None = await self.crud.update(
-            self.db, t_orm, update_data, commit=False
+            self.db, orm_obj=t_orm, data=update_data, commit=False
         )
         if updated_transaction_id is not None:
             update_status = UpdateStatus.UPDATED
@@ -306,7 +309,7 @@ class TransactionService:
                 line for line in t_orm.lines if line.id_ == tu_line.id_
             ][0]
             updated_line_id: int | None = await self.line_crud.update(
-                self.db, line_orm, data, commit=False
+                self.db, orm_obj=line_orm, data=data, commit=False
             )
             if updated_line_id is not None and update_status != UpdateStatus.UPDATED:
                 update_status = UpdateStatus.REQUIRED
@@ -324,7 +327,7 @@ class TransactionService:
                 update_status = UpdateStatus.REQUIRED
 
         if update_status == UpdateStatus.REQUIRED:
-            await self.crud.mark_updated(self.db, t_orm, commit=False)
+            await self.crud.mark_updated(self.db, orm_obj=t_orm, commit=False)
 
         await self.crud.commit(self.db)
 
@@ -336,9 +339,9 @@ class TransactionService:
         )
 
         # Transaction lines and the transaction_tags records will be cascaded if perm
-        await self.crud.delete(self.db, transaction_orm, perm)
+        await self.crud.delete(self.db, obj_orm=transaction_orm, perm=perm)
 
         if not perm:
             # TODO: Better introduce delete_multiple in CRUD
             for line in transaction_orm.lines:
-                await self.line_crud.delete(self.db, line, perm=False)
+                await self.line_crud.delete(self.db, obj_orm=line, perm=False)

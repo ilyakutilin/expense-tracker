@@ -1,17 +1,15 @@
 import re
 from datetime import datetime
-from typing import Union
 
-from fastapi_filter.contrib.sqlalchemy import Filter
-from fastapi_filter.contrib.sqlalchemy.filter import _orm_operator_transformer
-from sqlalchemy import BigInteger, Boolean, DateTime, Identity, false, func, or_
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Identity, false, func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import DeclarativeBase, Mapped, Query, declared_attr, mapped_column
-from sqlalchemy.sql.selectable import Select
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 
 class BaseORM(AsyncAttrs, DeclarativeBase):
+    __abstract__ = True
+
     @declared_attr.directive
     def __tablename__(cls):
         name = cls.__name__
@@ -81,43 +79,9 @@ class BaseORM(AsyncAttrs, DeclarativeBase):
         return f"<{self.__class__.__name__} ({', '.join(cols)})>"
 
 
-class BaseFilter(Filter):
-    @property
-    def ordering_values(self):
-        raw_values = super().ordering_values
-        processed_values = []
-        aliased_fields = ["id", "type"]
-        for v in raw_values:
-            if isinstance(v, str) and v in aliased_fields:
-                processed_values.append(f"{v}_")
-            else:
-                processed_values.append(v)
-        return processed_values
+class UserOwnedBaseORM(BaseORM):
+    __abstract__ = True
 
-    def filter(self, query: Union[Query, Select]):
-        for field_name, value in self.filtering_fields:
-            field_value = getattr(self, field_name)
-            if isinstance(field_value, Filter):
-                query = field_value.filter(query)
-            else:
-                if "__" in field_name:
-                    field_name, operator = field_name.split("__")
-                    if field_name in ["id", "type"]:
-                        field_name = f"{field_name}_"
-                    operator, value = _orm_operator_transformer[operator](value)
-                else:
-                    operator = "__eq__"
-
-                if field_name == self.Constants.search_field_name and hasattr(
-                    self.Constants, "search_model_fields"
-                ):
-                    search_filters = [
-                        getattr(self.Constants.model, field).ilike(f"%{value}%")
-                        for field in self.Constants.search_model_fields
-                    ]
-                    query = query.filter(or_(*search_filters))
-                else:
-                    model_field = getattr(self.Constants.model, field_name)
-                    query = query.filter(getattr(model_field, operator)(value))
-
-        return query
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id", ondelete="SET NULL"), index=True
+    )

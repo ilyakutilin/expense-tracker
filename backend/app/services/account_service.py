@@ -14,8 +14,9 @@ from app.schemas.pagination import PaginatedResponse
 
 
 class AccountService:
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, user_id: int):
         self.db = db
+        self.user_id = user_id
         self.crud: crud.CRUDAccount = crud.account_crud
         self.currency_crud: crud.CRUDCurrency = crud.currency_crud
 
@@ -23,30 +24,45 @@ class AccountService:
         self, account_id: int, include_deleted: bool = False
     ) -> AccountORM:
         account_orm: AccountORM | None = await self.crud.get_by_id(
-            self.db, account_id, include_deleted
+            self.db,
+            obj_id=account_id,
+            user_id=self.user_id,
+            include_deleted=include_deleted,
         )
         if not account_orm:
             raise exc.NotFoundError(
                 message=f"Account with id {account_id} not found",
-                detail={"id": account_id},
+                detail={
+                    "id": account_id,
+                    "user_id": self.user_id,
+                },
             )
         return account_orm
 
     async def _check_name_exists(self, name: str) -> None:
-        exists: bool = await self.crud.exists(self.db, name=name)
+        exists: bool = await self.crud.exists(
+            self.db,
+            user_id=self.user_id,
+            name=name,
+        )
         if exists:
             raise exc.ConflictError(
                 message=f"Account with name '{name}' already exists",
-                detail={"name": name},
+                detail={
+                    "name": name,
+                    "user_id": self.user_id,
+                },
             )
 
     async def _check_referential_integrity(
         self, parent_id: int | None, currency_id: int | None
     ) -> None:
         msg_txt = ""
-        detail: dict[str, int] = {}
+        detail: dict[str, Any] = {"user_id": self.user_id}
         if parent_id:
-            parent_exists = await self.crud.exists(self.db, id_=parent_id)
+            parent_exists = await self.crud.exists(
+                self.db, user_id=self.user_id, id_=parent_id
+            )
             if not parent_exists:
                 detail["parent_id"] = parent_id
                 msg_txt = f"Parent account with ID {parent_id} does not exist."
@@ -92,6 +108,7 @@ class AccountService:
         account_orms, total_count = await self.crud.get_all(
             db_session=self.db,
             filter_conditions=conditions,
+            user_id=self.user_id,
             include_deleted=include_deleted,
             unique=True,
         )
@@ -100,7 +117,7 @@ class AccountService:
         if total_count is None:
             raise exc.CodeError("Total count of accounts cannot be None")
 
-        return PaginatedResponse(
+        return PaginatedResponse[AccountResponse](
             total=total_count,
             page=filter_params.page,
             page_size=filter_params.page_size,
@@ -116,14 +133,21 @@ class AccountService:
             account_create.parent_id, account_create.currency_id
         )
         account_data: dict[str, Any] = account_create.model_dump()
-        account_id: int = await self.crud.create(self.db, account_data, commit=True)
+        account_data["user_id"] = self.user_id
+        account_id: int = await self.crud.create(
+            self.db, obj_data=account_data, commit=True
+        )
         account_orm: AccountORM | None = await self.crud.get_by_id(
-            self.db, account_id, include_deleted=False
+            self.db, obj_id=account_id, include_deleted=False
         )
         if not account_orm:
             raise exc.DatabaseError(
                 message=("Created account could not be fetched from the database"),
-                detail={"id": account_id, "name": account_create.name},
+                detail={
+                    "id": account_id,
+                    "name": account_create.name,
+                    "user_id": self.user_id,
+                },
             )
         return AccountResponse.model_validate(account_orm)
 
@@ -153,12 +177,12 @@ class AccountService:
         updated_account_orm: AccountORM | None = None
         if updated_account_id:
             updated_account_orm: AccountORM | None = await self.crud.get_by_id(
-                self.db, updated_account_id
+                self.db, obj_id=updated_account_id
             )
             if not updated_account_orm:
                 raise exc.DatabaseError(
                     message=("Updated account could not be fetched from the database"),
-                    detail={"id": account_id},
+                    detail={"id": account_id, "user_id": self.user_id},
                 )
         else:
             updated_account_orm = account_orm
@@ -167,4 +191,4 @@ class AccountService:
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
         account: AccountORM = await self._get_account_orm_by_id(account_id, perm)
 
-        await self.crud.delete(self.db, account, perm)
+        await self.crud.delete(self.db, obj_orm=account, perm=perm)

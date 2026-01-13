@@ -6,11 +6,12 @@ from sqlalchemy import Column, Date, ForeignKey, Index, Numeric, Table, Text, fa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.settings import settings
-from app.models.base import BaseORM
+from app.models.base import BaseORM, UserOwnedBaseORM
 
 if TYPE_CHECKING:
     from app.models.account import AccountORM
     from app.models.tag import TagORM
+    from app.models.user import UserORM
 
 
 transaction_tag = Table(
@@ -21,7 +22,7 @@ transaction_tag = Table(
 )
 
 
-class TransactionORM(BaseORM):
+class TransactionORM(UserOwnedBaseORM):
     type_: Mapped[str] = mapped_column("type", Text, index=True)
     date: Mapped[dt.date] = mapped_column(Date, index=True)
     comment: Mapped[str | None] = mapped_column(Text, index=True)
@@ -36,6 +37,11 @@ class TransactionORM(BaseORM):
     tags: Mapped[list["TagORM"]] = relationship(
         "TagORM",
         secondary=transaction_tag,
+        back_populates="transactions",
+    )
+
+    user: Mapped["UserORM | None"] = relationship(
+        "UserORM",
         back_populates="transactions",
     )
 
