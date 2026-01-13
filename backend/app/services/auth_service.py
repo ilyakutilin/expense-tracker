@@ -12,7 +12,7 @@ from app.core.auth.security import (
     verify_password,
 )
 from app.models.user import UserORM
-from app.schemas.auth import Token, UserLogin, UserRegister, UserResponse
+from app.schemas.auth import Token, UserRegister, UserResponse
 
 
 class AuthService:
@@ -61,22 +61,26 @@ class AuthService:
             )
         return UserResponse.model_validate(user_orm)
 
-    async def authenticate_user(self, user_login: UserLogin) -> UserResponse | None:
+    async def authenticate_user(self, email: str, password: str) -> Token:
         user_orm: UserORM | None = await self.crud.get_by(
-            self.db, include_deleted=False, email=user_login.email
+            self.db, include_deleted=False, email=email
+        )
+
+        err = exc.UnauthorizedError(
+            message="Incorrect email or password",
+            detail={"headers": {"WWW-Authenticate": "Bearer"}},
         )
 
         if not user_orm:
-            return None
+            raise err
 
-        if not verify_password(str(user_login.password), user_orm.password_hash):
-            return None
+        if not verify_password(password, user_orm.password_hash):
+            raise err
 
-        return UserResponse.model_validate(user_orm)
-
-    def create_token_for_user(self, user_id: int) -> Token:
         access_token = create_access_token(
-            data={"sub": str(user_id)},  # "sub" is the standard JWT claim for subject
+            data={
+                "sub": str(user_orm.id_)
+            },  # "sub" is the standard JWT claim for subject
         )
 
         return Token(access_token=access_token, token_type="bearer")
