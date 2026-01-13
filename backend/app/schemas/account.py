@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -64,7 +65,7 @@ class AccountResponse(AccountResponseBaseWithCurrency):
     )
 
     @model_serializer(mode="wrap")
-    def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, int | str]:
+    def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         serialized = handler(self)
         key_order = [
             "id",
