@@ -3,7 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth.dependency import get_current_user_id
 from app.core.db import get_db_session
-from app.services import AccountService, CurrencyService, TagService, TransactionService
+from app.services import (
+    AccountService,
+    AuthService,
+    CurrencyService,
+    TagService,
+    TransactionService,
+)
 
 
 def get_currency_service(
@@ -44,3 +50,10 @@ def get_transaction_service(
     Transaction service dependency.
     """
     return TransactionService(db, user_id)
+
+
+def get_auth_service(db: AsyncSession = Depends(get_db_session)) -> AuthService:
+    """
+    Auth service dependency.
+    """
+    return AuthService(db)
