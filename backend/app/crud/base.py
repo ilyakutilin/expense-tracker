@@ -1,9 +1,10 @@
 from typing import Any, Generic, TypeVar, cast
 
-from sqlalchemy import ScalarResult, Select, func, select
+from sqlalchemy import ScalarResult, Select, func, select, true
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.strategy_options import _AbstractLoad
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.filters.base import FilterConditions
 from app.models.base import BaseORM, UserOwnedBaseORM
@@ -19,20 +20,20 @@ class CRUDBase(Generic[ModelType]):
     def _get_options(cls) -> tuple[_AbstractLoad, ...]:
         return tuple()
 
-    def _add_user_clause(self, stmt: Select, user_id: int | None) -> Select:
+    def _build_user_clause(self, user_id: int | None) -> ColumnElement[bool]:
         if user_id is not None and hasattr(self.model, "user_id"):
             model_with_user_id = cast(type[UserOwnedBaseORM], self.model)
-            return stmt.where(model_with_user_id.user_id == user_id)
+            return model_with_user_id.user_id == user_id
 
-        return stmt
+        return true()
 
-    def _add_include_deleted_clause(
-        self, stmt: Select, include_deleted: bool
-    ) -> Select:
+    def _build_include_deleted_clause(
+        self, include_deleted: bool
+    ) -> ColumnElement[bool]:
         if not include_deleted:
-            return stmt.where(self.model.is_active)
+            return self.model.is_deleted == False  # noqa: E712
 
-        return stmt
+        return true()
 
     async def exists(
         self,
@@ -42,15 +43,16 @@ class CRUDBase(Generic[ModelType]):
         include_deleted: bool = False,
         **params,
     ) -> bool:
-        stmt = select(self.model.id_)
+        stmt = (
+            select(self.model.id_)
+            .where(self._build_user_clause(user_id))
+            .where(self._build_include_deleted_clause(include_deleted))
+        )
 
         for attr, value in params.items():
             if not hasattr(self.model, attr):
                 raise AttributeError(f"{self.model.__name__} has no attribute '{attr}'")
             stmt = stmt.where(getattr(self.model, attr) == value)
-
-        stmt = self._add_user_clause(stmt, user_id)
-        stmt = self._add_include_deleted_clause(stmt, include_deleted)
 
         result = await db_session.scalar(stmt)
         return result is not None
@@ -66,10 +68,12 @@ class CRUDBase(Generic[ModelType]):
         if not ids:
             return []
 
-        stmt = select(self.model.id_).where(self.model.id_.in_(ids))
-
-        stmt = self._add_user_clause(stmt, user_id)
-        stmt = self._add_include_deleted_clause(stmt, include_deleted)
+        stmt = (
+            select(self.model.id_)
+            .where(self.model.id_.in_(ids))
+            .where(self._build_user_clause(user_id))
+            .where(self._build_include_deleted_clause(include_deleted))
+        )
 
         result = await db_session.execute(stmt)
         existing_ids = result.scalars().all()
@@ -83,10 +87,13 @@ class CRUDBase(Generic[ModelType]):
         user_id: int | None = None,
         include_deleted: bool = False,
     ) -> ModelType | None:
-        stmt = select(self.model).where(self.model.id_ == obj_id)
+        stmt = (
+            select(self.model)
+            .where(self.model.id_ == obj_id)
+            .where(self._build_user_clause(user_id))
+            .where(self._build_include_deleted_clause(include_deleted))
+        )
 
-        stmt = self._add_user_clause(stmt, user_id)
-        stmt = self._add_include_deleted_clause(stmt, include_deleted)
         stmt = stmt.options(*self._get_options())
 
         result = await db_session.execute(stmt)
@@ -100,15 +107,16 @@ class CRUDBase(Generic[ModelType]):
         include_deleted: bool = False,
         **params,
     ) -> ModelType | None:
-        stmt = select(self.model)
+        stmt = (
+            select(self.model)
+            .where(self._build_user_clause(user_id))
+            .where(self._build_include_deleted_clause(include_deleted))
+        )
 
         for attr, value in params.items():
             if not hasattr(self.model, attr):
                 raise AttributeError(f"{self.model.__name__} has no attribute '{attr}'")
             stmt = stmt.where(getattr(self.model, attr) == value)
-
-        stmt = self._add_user_clause(stmt, user_id)
-        stmt = self._add_include_deleted_clause(stmt, include_deleted)
 
         stmt = stmt.options(*self._get_options())
         result = await db_session.execute(stmt)
@@ -123,21 +131,23 @@ class CRUDBase(Generic[ModelType]):
         include_deleted: bool = False,
         unique: bool = False,
     ) -> tuple[list[ModelType], int]:
-        main_stmt = select(self.model)
-        count_stmt = select(func.count(self.model.id_))
+        stmts: dict[str, Select] = {
+            "main_stmt": select(self.model),
+            "count_stmt": select(func.count(self.model.id_)),
+        }
 
-        for stmt in (main_stmt, count_stmt):
-            stmt = self._add_user_clause(stmt, user_id)
-            stmt = self._add_include_deleted_clause(stmt, include_deleted)
+        for key in stmts:
+            stmts[key] = (
+                stmts[key]
+                .where(self._build_user_clause(user_id))
+                .where(self._build_include_deleted_clause(include_deleted))
+                .where(*filter_conditions.where_clauses)
+            )
 
-            if filter_conditions.has_filters():
-                for condition in filter_conditions.where_clauses:
-                    stmt = stmt.where(condition)
-
-        total_count_result = await db_session.execute(count_stmt)
+        total_count_result = await db_session.execute(stmts["count_stmt"])
         total_count = total_count_result.scalar_one()
 
-        main_stmt = main_stmt.options(*self._get_options())
+        main_stmt = stmts["main_stmt"].options(*self._get_options())
 
         if filter_conditions.has_ordering():
             for order_clause in filter_conditions.order_by_clauses:
@@ -146,8 +156,6 @@ class CRUDBase(Generic[ModelType]):
         if filter_conditions.has_pagination():
             offset, limit = filter_conditions.offset_limit
             main_stmt = main_stmt.offset(offset).limit(limit)
-
-        main_stmt = main_stmt.options(*self._get_options())
 
         result = await db_session.execute(main_stmt)
         scalar_result: ScalarResult[ModelType] = result.scalars()
