@@ -1,21 +1,18 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Index, Text, text
+from sqlalchemy import Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseORM
+from app.models.base import UserOwnedBaseORM
 
 if TYPE_CHECKING:
     from app.models.account import AccountORM
     from app.models.user import UserORM
 
 
-class CurrencyORM(BaseORM):
+class CurrencyORM(UserOwnedBaseORM):
     code: Mapped[str] = mapped_column(Text)
     symbol: Mapped[str | None] = mapped_column(Text)
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("user.id", ondelete="SET NULL"), index=True
-    )
 
     accounts: Mapped[list["AccountORM"]] = relationship(
         "AccountORM",

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import BaseORM
+from app.models.base import UserOwnedBaseORM
 
 if TYPE_CHECKING:
     from app.models.currency import CurrencyORM
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from app.models.user import UserORM
 
 
-class AccountORM(BaseORM):
+class AccountORM(UserOwnedBaseORM):
     name: Mapped[str] = mapped_column(Text)
     type_: Mapped[str] = mapped_column("type", Text, index=True)
     parent_id: Mapped[int | None] = mapped_column(
@@ -19,9 +19,6 @@ class AccountORM(BaseORM):
     )
     currency_id: Mapped[int | None] = mapped_column(
         ForeignKey("currency.id", ondelete="RESTRICT"), index=True
-    )
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("user.id", ondelete="SET NULL"), index=True
     )
 
     parent: Mapped["AccountORM | None"] = relationship(
