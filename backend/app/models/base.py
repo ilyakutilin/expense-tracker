@@ -1,13 +1,15 @@
 import re
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Identity, false, func
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Identity, false, func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 
 class BaseORM(AsyncAttrs, DeclarativeBase):
+    __abstract__ = True
+
     @declared_attr.directive
     def __tablename__(cls):
         name = cls.__name__
@@ -75,3 +77,11 @@ class BaseORM(AsyncAttrs, DeclarativeBase):
             cols.append(f"{col}={getattr(self, col)}")
 
         return f"<{self.__class__.__name__} ({', '.join(cols)})>"
+
+
+class UserOwnedBaseORM(BaseORM):
+    __abstract__ = True
+
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("user.id", ondelete="SET NULL"), index=True
+    )

@@ -22,7 +22,9 @@ class TagService:
     async def _check_name_exists(
         self, name: str, include_deleted: bool = False
     ) -> None:
-        exists: bool = await self.crud.exists(self.db, include_deleted, name=name)
+        exists: bool = await self.crud.exists(
+            self.db, include_deleted=include_deleted, name=name
+        )
         if exists:
             raise exc.ConflictError(
                 message=f"Tag with name '{name}' already exists",
@@ -33,7 +35,7 @@ class TagService:
         self, tag_id: int, include_deleted: bool = False
     ) -> TagORM:
         tag_orm: TagORM | None = await self.crud.get_by_id(
-            self.db, tag_id, include_deleted
+            self.db, obj_id=tag_id, include_deleted=include_deleted
         )
         if not tag_orm:
             raise exc.NotFoundError(
@@ -79,9 +81,9 @@ class TagService:
     async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
         await self._check_name_exists(tag_create.name)
         tag_data: dict[str, Any] = tag_create.model_dump()
-        tag_id: int = await self.crud.create(self.db, tag_data, commit=True)
+        tag_id: int = await self.crud.create(self.db, obj_data=tag_data, commit=True)
         tag_orm: TagORM | None = await self.crud.get_by_id(
-            self.db, tag_id, include_deleted=False
+            self.db, obj_id=tag_id, include_deleted=False
         )
         if not tag_orm:
             raise exc.DatabaseError(
@@ -103,7 +105,7 @@ class TagService:
         updated_tag_orm: TagORM | None = None
         if updated_tag_id:
             updated_tag_orm: TagORM | None = await self.crud.get_by_id(
-                self.db, updated_tag_id
+                self.db, obj_id=updated_tag_id
             )
             if not updated_tag_orm:
                 raise exc.DatabaseError(
@@ -117,4 +119,4 @@ class TagService:
     async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)
 
-        await self.crud.delete(self.db, tag_orm, perm)
+        await self.crud.delete(self.db, obj_orm=tag_orm, perm=perm)

@@ -46,7 +46,7 @@ class TransactionService:
 
         if account_ids:
             existing_acc_ids: list[int] = await self.account_crud.exist_multiple(
-                self.db, account_ids
+                self.db, ids=account_ids
             )
             missing_acc_ids = [
                 aid for aid in account_ids if aid not in existing_acc_ids
@@ -56,7 +56,7 @@ class TransactionService:
 
         if tag_ids:
             existing_tag_ids: list[int] = await self.tag_crud.exist_multiple(
-                self.db, tag_ids
+                self.db, ids=tag_ids
             )
             missing_acc_ids = [tid for tid in tag_ids if tid not in existing_tag_ids]
             if missing_acc_ids:
@@ -75,7 +75,7 @@ class TransactionService:
         self, transaction_id: int, include_deleted: bool = False
     ) -> TransactionORM:
         transaction_orm: TransactionORM | None = await self.crud.get_by_id(
-            self.db, transaction_id, include_deleted
+            self.db, obj_id=transaction_id, include_deleted=include_deleted
         )
         if not transaction_orm:
             raise exc.NotFoundError(
@@ -127,13 +127,13 @@ class TransactionService:
         )
         transaction_data: dict[str, Any] = tc.model_dump()
         transaction_id: int = await self.crud.create(
-            self.db, transaction_data, commit=False
+            self.db, obj_data=transaction_data, commit=False
         )
 
         for line in tc.lines:
             line.transaction_id = transaction_id
         lines_data: list[dict[str, Any]] = [line.model_dump() for line in tc.lines]
-        await self.line_crud.create_multiple(self.db, lines_data, commit=False)
+        await self.line_crud.create_multiple(self.db, data=lines_data, commit=False)
 
         if tc.tag_ids:
             inserted_tag_ids = await self.crud.insert_transaction_tags(
@@ -295,7 +295,7 @@ class TransactionService:
         # Update the main transaction object in the DB
         update_data: dict[str, Any] = tu.model_dump(exclude_unset=True, by_alias=True)
         updated_transaction_id: int | None = await self.crud.update(
-            self.db, t_orm, update_data, commit=False
+            self.db, orm_obj=t_orm, data=update_data, commit=False
         )
         if updated_transaction_id is not None:
             update_status = UpdateStatus.UPDATED
@@ -307,7 +307,7 @@ class TransactionService:
                 line for line in t_orm.lines if line.id_ == tu_line.id_
             ][0]
             updated_line_id: int | None = await self.line_crud.update(
-                self.db, line_orm, data, commit=False
+                self.db, orm_obj=line_orm, data=data, commit=False
             )
             if updated_line_id is not None and update_status != UpdateStatus.UPDATED:
                 update_status = UpdateStatus.REQUIRED
@@ -325,7 +325,7 @@ class TransactionService:
                 update_status = UpdateStatus.REQUIRED
 
         if update_status == UpdateStatus.REQUIRED:
-            await self.crud.mark_updated(self.db, t_orm, commit=False)
+            await self.crud.mark_updated(self.db, orm_obj=t_orm, commit=False)
 
         await self.crud.commit(self.db)
 
@@ -337,9 +337,9 @@ class TransactionService:
         )
 
         # Transaction lines and the transaction_tags records will be cascaded if perm
-        await self.crud.delete(self.db, transaction_orm, perm)
+        await self.crud.delete(self.db, obj_orm=transaction_orm, perm=perm)
 
         if not perm:
             # TODO: Better introduce delete_multiple in CRUD
             for line in transaction_orm.lines:
-                await self.line_crud.delete(self.db, line, perm=False)
+                await self.line_crud.delete(self.db, obj_orm=line, perm=False)

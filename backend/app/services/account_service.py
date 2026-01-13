@@ -24,7 +24,7 @@ class AccountService:
         self, account_id: int, include_deleted: bool = False
     ) -> AccountORM:
         account_orm: AccountORM | None = await self.crud.get_by_id(
-            self.db, account_id, include_deleted
+            self.db, obj_id=account_id, include_deleted=include_deleted
         )
         if not account_orm:
             raise exc.NotFoundError(
@@ -117,9 +117,11 @@ class AccountService:
             account_create.parent_id, account_create.currency_id
         )
         account_data: dict[str, Any] = account_create.model_dump()
-        account_id: int = await self.crud.create(self.db, account_data, commit=True)
+        account_id: int = await self.crud.create(
+            self.db, obj_data=account_data, commit=True
+        )
         account_orm: AccountORM | None = await self.crud.get_by_id(
-            self.db, account_id, include_deleted=False
+            self.db, obj_id=account_id, include_deleted=False
         )
         if not account_orm:
             raise exc.DatabaseError(
@@ -154,7 +156,7 @@ class AccountService:
         updated_account_orm: AccountORM | None = None
         if updated_account_id:
             updated_account_orm: AccountORM | None = await self.crud.get_by_id(
-                self.db, updated_account_id
+                self.db, obj_id=updated_account_id
             )
             if not updated_account_orm:
                 raise exc.DatabaseError(
@@ -168,4 +170,4 @@ class AccountService:
     async def delete_account(self, account_id: int, perm: bool = False) -> None:
         account: AccountORM = await self._get_account_orm_by_id(account_id, perm)
 
-        await self.crud.delete(self.db, account, perm)
+        await self.crud.delete(self.db, obj_orm=account, perm=perm)

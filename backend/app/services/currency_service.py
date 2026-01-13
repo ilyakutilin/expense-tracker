@@ -23,7 +23,7 @@ class CurrencyService:
         self, currency_id: int, include_deleted: bool = False
     ) -> CurrencyORM:
         currency: CurrencyORM | None = await self.crud.get_by_id(
-            self.db, currency_id, include_deleted
+            self.db, obj_id=currency_id, include_deleted=include_deleted
         )
         if not currency:
             raise exc.NotFoundError(
@@ -45,9 +45,11 @@ class CurrencyService:
     ) -> schemas.CurrencyResponse:
         await self._check_code_exists(currency_create.code)
         currency_data: dict[str, Any] = currency_create.model_dump()
-        currency_id: int = await self.crud.create(self.db, currency_data, commit=True)
+        currency_id: int = await self.crud.create(
+            self.db, obj_data=currency_data, commit=True
+        )
         currency_orm: CurrencyORM | None = await self.crud.get_by_id(
-            self.db, currency_id, include_deleted=False
+            self.db, obj_id=currency_id, include_deleted=False
         )
         if not currency_orm:
             raise exc.DatabaseError(
@@ -76,7 +78,7 @@ class CurrencyService:
         updated_currency_orm: CurrencyORM | None = None
         if updated_currency_id:
             updated_currency_orm: CurrencyORM | None = await self.crud.get_by_id(
-                self.db, updated_currency_id
+                self.db, obj_id=updated_currency_id
             )
             if not updated_currency_orm:
                 raise exc.DatabaseError(
@@ -91,7 +93,7 @@ class CurrencyService:
     async def delete_currency(self, currency_id: int, perm: bool = False) -> None:
         currency: CurrencyORM = await self._get_currency_orm(currency_id, perm)
 
-        await self.crud.delete(self.db, currency, perm)
+        await self.crud.delete(self.db, obj_orm=currency, perm=perm)
 
     async def get_currency(self, currency_id: int) -> schemas.CurrencyResponse:
         currency_orm: CurrencyORM = await self._get_currency_orm(currency_id)
