@@ -85,7 +85,7 @@ class TransactionService:
         return transaction_orm
 
     async def get_transaction_by_id(
-        self, transaction_id: int, include_deleted: bool = False
+        self, *, transaction_id: int, include_deleted: bool = False
     ) -> TransactionResponse:
         transaction_orm: TransactionORM = await self._get_transaction_orm_by_id(
             transaction_id, include_deleted
@@ -94,6 +94,7 @@ class TransactionService:
 
     async def get_all_transactions(
         self,
+        *,
         filter_params: TransactionFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[TransactionResponse]:
@@ -121,7 +122,7 @@ class TransactionService:
             items=transactions,
         )
 
-    async def create_transaction(self, tc: TransactionCreate) -> TransactionResponse:
+    async def create_transaction(self, *, tc: TransactionCreate) -> TransactionResponse:
         from_, to = tc.lines
         await self._check_referential_integrity(
             [from_.account_id, to.account_id], tc.tag_ids
@@ -167,7 +168,7 @@ class TransactionService:
         return TransactionResponse.model_validate(transaction_orm)
 
     async def update_transaction(
-        self, transaction_id: int, tu: TransactionUpdate
+        self, *, transaction_id: int, tu: TransactionUpdate
     ) -> TransactionResponse:
         """Update the transaction by the given ID based on the provided data.
 
@@ -331,9 +332,11 @@ class TransactionService:
 
         await self.crud.commit(self.db)
 
-        return await self.get_transaction_by_id(transaction_id)
+        return await self.get_transaction_by_id(transaction_id=transaction_id)
 
-    async def delete_transaction(self, transaction_id: int, perm: bool = False) -> None:
+    async def delete_transaction(
+        self, *, transaction_id: int, perm: bool = False
+    ) -> None:
         transaction_orm: TransactionORM = await self._get_transaction_orm_by_id(
             transaction_id, perm
         )

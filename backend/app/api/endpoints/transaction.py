@@ -22,7 +22,9 @@ async def get_one_transaction(
     transaction_id: int,
     transaction_service: TransactionService = Depends(get_transaction_service),
 ) -> TransactionResponse:
-    return await transaction_service.get_transaction_by_id(transaction_id)
+    return await transaction_service.get_transaction_by_id(
+        transaction_id=transaction_id
+    )
 
 
 @router.get(
@@ -50,7 +52,7 @@ async def create_new_transaction(
     transaction_data: TransactionCreate,
     transaction_service: TransactionService = Depends(get_transaction_service),
 ) -> TransactionResponse:
-    return await transaction_service.create_transaction(transaction_data)
+    return await transaction_service.create_transaction(tc=transaction_data)
 
 
 @router.patch(
@@ -64,7 +66,7 @@ async def update_transaction(
     transaction_service: TransactionService = Depends(get_transaction_service),
 ) -> TransactionResponse:
     return await transaction_service.update_transaction(
-        transaction_id, transaction_update
+        transaction_id=transaction_id, tu=transaction_update
     )
 
 
@@ -74,4 +76,6 @@ async def delete_transaction(
     perm: bool = False,
     transaction_service: TransactionService = Depends(get_transaction_service),
 ) -> None:
-    await transaction_service.delete_transaction(transaction_id, perm)
+    await transaction_service.delete_transaction(
+        transaction_id=transaction_id, perm=perm
+    )

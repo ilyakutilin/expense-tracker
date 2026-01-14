@@ -46,7 +46,7 @@ class CurrencyService:
             )
 
     async def create_currency(
-        self, currency_create: schemas.CurrencyCreate
+        self, *, currency_create: schemas.CurrencyCreate
     ) -> schemas.CurrencyResponse:
         await self._check_code_exists(currency_create.code)
         currency_data: dict[str, Any] = currency_create.model_dump()
@@ -69,7 +69,7 @@ class CurrencyService:
         return schemas.CurrencyResponse.model_validate(currency_orm)
 
     async def update_currency(
-        self, currency_id: int, currency_update: schemas.CurrencyUpdate
+        self, *, currency_id: int, currency_update: schemas.CurrencyUpdate
     ) -> schemas.CurrencyResponse:
         currency_orm: CurrencyORM = await self._get_currency_orm(currency_id)
 
@@ -100,17 +100,18 @@ class CurrencyService:
 
         return schemas.CurrencyResponse.model_validate(updated_currency_orm)
 
-    async def delete_currency(self, currency_id: int, perm: bool = False) -> None:
+    async def delete_currency(self, *, currency_id: int, perm: bool = False) -> None:
         currency: CurrencyORM = await self._get_currency_orm(currency_id, perm)
 
         await self.crud.delete(self.db, obj_orm=currency, perm=perm)
 
-    async def get_currency(self, currency_id: int) -> schemas.CurrencyResponse:
+    async def get_currency(self, *, currency_id: int) -> schemas.CurrencyResponse:
         currency_orm: CurrencyORM = await self._get_currency_orm(currency_id)
         return schemas.CurrencyResponse.model_validate(currency_orm)
 
     async def get_all_currencies(
         self,
+        *,
         filter_params: CurrencyFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[schemas.CurrencyResponse]:

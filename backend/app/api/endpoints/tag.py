@@ -14,7 +14,7 @@ async def get_one_tag(
     tag_id: int,
     tag_service: TagService = Depends(get_tag_service),
 ) -> TagResponse:
-    return await tag_service.get_tag_by_id(tag_id)
+    return await tag_service.get_tag_by_id(tag_id=tag_id)
 
 
 @router.get(
@@ -38,7 +38,7 @@ async def create_new_tag(
     tag_data: TagCreateUpdate,
     tag_service: TagService = Depends(get_tag_service),
 ) -> TagResponse:
-    return await tag_service.create_tag(tag_data)
+    return await tag_service.create_tag(tag_create=tag_data)
 
 
 @router.patch("/{tag_id}", response_model=TagResponse, status_code=status.HTTP_200_OK)
@@ -47,7 +47,7 @@ async def update_tag(
     tag_update: TagCreateUpdate,
     tag_service: TagService = Depends(get_tag_service),
 ) -> TagResponse:
-    return await tag_service.update_tag(tag_id, tag_update)
+    return await tag_service.update_tag(tag_id=tag_id, tag_update=tag_update)
 
 
 @router.delete("/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -56,4 +56,4 @@ async def delete_tag(
     perm: bool = False,
     tag_service: TagService = Depends(get_tag_service),
 ) -> None:
-    await tag_service.delete_tag(tag_id, perm)
+    await tag_service.delete_tag(tag_id=tag_id, perm=perm)

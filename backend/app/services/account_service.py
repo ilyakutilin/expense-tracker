@@ -91,7 +91,7 @@ class AccountService:
             )
 
     async def get_account_by_id(
-        self, account_id: int, include_deleted: bool = False
+        self, *, account_id: int, include_deleted: bool = False
     ) -> AccountResponse:
         account_orm: AccountORM = await self._get_account_orm_by_id(
             account_id, include_deleted
@@ -100,6 +100,7 @@ class AccountService:
 
     async def get_all_accounts(
         self,
+        *,
         filter_params: AccountFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[AccountResponse]:
@@ -127,7 +128,7 @@ class AccountService:
             items=accounts,
         )
 
-    async def create_account(self, account_create: AccountCreate) -> AccountResponse:
+    async def create_account(self, *, account_create: AccountCreate) -> AccountResponse:
         await self._check_name_exists(account_create.name)
         await self._check_referential_integrity(
             account_create.parent_id, account_create.currency_id
@@ -152,7 +153,7 @@ class AccountService:
         return AccountResponse.model_validate(account_orm)
 
     async def update_account(
-        self, account_id: int, account_update: AccountUpdate
+        self, *, account_id: int, account_update: AccountUpdate
     ) -> AccountResponse:
         account_orm: AccountORM = await self._get_account_orm_by_id(account_id)
 
@@ -188,7 +189,7 @@ class AccountService:
             updated_account_orm = account_orm
         return AccountResponse.model_validate(updated_account_orm)
 
-    async def delete_account(self, account_id: int, perm: bool = False) -> None:
+    async def delete_account(self, *, account_id: int, perm: bool = False) -> None:
         account: AccountORM = await self._get_account_orm_by_id(account_id, perm)
 
         await self.crud.delete(self.db, obj_orm=account, perm=perm)

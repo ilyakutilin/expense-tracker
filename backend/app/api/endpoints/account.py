@@ -16,7 +16,7 @@ async def get_one_account(
     account_id: int,
     account_service: AccountService = Depends(get_account_service),
 ) -> AccountResponse:
-    return await account_service.get_account_by_id(account_id)
+    return await account_service.get_account_by_id(account_id=account_id)
 
 
 @router.get(
@@ -40,7 +40,7 @@ async def create_new_account(
     account_data: AccountCreate,
     account_service: AccountService = Depends(get_account_service),
 ) -> AccountResponse:
-    return await account_service.create_account(account_data)
+    return await account_service.create_account(account_create=account_data)
 
 
 @router.patch(
@@ -51,7 +51,9 @@ async def update_account(
     account_update: AccountUpdate,
     account_service: AccountService = Depends(get_account_service),
 ) -> AccountResponse:
-    return await account_service.update_account(account_id, account_update)
+    return await account_service.update_account(
+        account_id=account_id, account_update=account_update
+    )
 
 
 @router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -60,4 +62,4 @@ async def delete_account(
     perm: bool = False,
     account_service: AccountService = Depends(get_account_service),
 ) -> None:
-    await account_service.delete_account(account_id, perm)
+    await account_service.delete_account(account_id=account_id, perm=perm)

@@ -14,7 +14,7 @@ async def create_new_currency(
     currency_data: CurrencyCreate,
     currency_service: CurrencyService = Depends(get_currency_service),
 ) -> CurrencyResponse:
-    return await currency_service.create_currency(currency_data)
+    return await currency_service.create_currency(currency_create=currency_data)
 
 
 @router.patch(
@@ -25,7 +25,9 @@ async def update_currency(
     currency_data: CurrencyUpdate,
     currency_service: CurrencyService = Depends(get_currency_service),
 ) -> CurrencyResponse:
-    return await currency_service.update_currency(currency_id, currency_data)
+    return await currency_service.update_currency(
+        currency_id=currency_id, currency_update=currency_data
+    )
 
 
 @router.get(
@@ -52,7 +54,7 @@ async def get_currency(
     currency_id: int,
     currency_service: CurrencyService = Depends(get_currency_service),
 ) -> CurrencyResponse:
-    return await currency_service.get_currency(currency_id)
+    return await currency_service.get_currency(currency_id=currency_id)
 
 
 @router.delete("/{currency_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -61,4 +63,4 @@ async def delete_currency(
     perm: bool = False,
     currency_service: CurrencyService = Depends(get_currency_service),
 ) -> None:
-    await currency_service.delete_currency(currency_id, perm)
+    await currency_service.delete_currency(currency_id=currency_id, perm=perm)

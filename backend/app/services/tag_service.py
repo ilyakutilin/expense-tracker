@@ -57,13 +57,14 @@ class TagService:
         return tag_orm
 
     async def get_tag_by_id(
-        self, tag_id: int, include_deleted: bool = False
+        self, *, tag_id: int, include_deleted: bool = False
     ) -> TagResponse:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, include_deleted)
         return TagResponse.model_validate(tag_orm)
 
     async def get_all_tags(
         self,
+        *,
         filter_params: TagFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[TagResponse]:
@@ -91,7 +92,7 @@ class TagService:
             items=tags,
         )
 
-    async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
+    async def create_tag(self, *, tag_create: TagCreateUpdate) -> TagResponse:
         await self._check_name_exists(tag_create.name)
         tag_data: dict[str, Any] = tag_create.model_dump()
         tag_data["user_id"] = self.user_id
@@ -110,7 +111,9 @@ class TagService:
             )
         return TagResponse.model_validate(tag_orm)
 
-    async def update_tag(self, tag_id: int, tag_update: TagCreateUpdate) -> TagResponse:
+    async def update_tag(
+        self, *, tag_id: int, tag_update: TagCreateUpdate
+    ) -> TagResponse:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id)
 
         await self._check_name_exists(tag_update.name)
@@ -137,7 +140,7 @@ class TagService:
             updated_tag_orm = tag_orm
         return TagResponse.model_validate(updated_tag_orm)
 
-    async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
+    async def delete_tag(self, *, tag_id: int, perm: bool = False) -> None:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)
 
         await self.crud.delete(self.db, obj_orm=tag_orm, perm=perm)
