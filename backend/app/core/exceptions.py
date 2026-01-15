@@ -126,3 +126,9 @@ class PathError(CodeError):
         self.path = str(path)
         self.message = message
         super().__init__(f"PathError for '{self.path}': {self.message}")
+
+
+class CacheError(CodeError):
+    """Exception for cache-related errors."""
+
+    pass
