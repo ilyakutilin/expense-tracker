@@ -7,6 +7,7 @@ from loguru import logger
 from app.api.errors import setup_exception_handlers
 from app.api.middleware import logging_middleware
 from app.api.routers import main_router
+from app.core.cache import cache
 from app.core.logger import setup_logging
 from app.core.settings import settings
 
@@ -14,12 +15,13 @@ from app.core.settings import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
-
     logger.info("Starting up FastAPI application")
+    await cache.connect()
 
     yield
 
     logger.info("Shutting down FastAPI application")
+    await cache.disconnect()
     logger.complete()
 
 
