@@ -8,6 +8,7 @@ class Entity(str, Enum):
     CURRENCY = "currency"
     TAG = "tag"
     TRANSACTION = "transaction"
+    USER = "user"
 
 
 class Type(str, Enum):
