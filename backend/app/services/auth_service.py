@@ -11,8 +11,10 @@ from app.core.auth.security import (
     get_password_hash,
     verify_password,
 )
+from app.core.cache import cached
 from app.models.user import UserORM
 from app.schemas.auth import Token, UserRegister, UserResponse
+from app.schemas.cache import CachePattern, Entity
 
 
 class AuthService:
@@ -85,6 +87,14 @@ class AuthService:
 
         return Token(access_token=access_token, token_type="bearer")
 
+    @cached(
+        pattern=CachePattern(
+            entity=Entity.USER,
+            obj_id_key="user_id",
+            is_user_owned=False,
+        ),
+        response_model=UserResponse,
+    )
     async def get_user_by_id(
         self, user_id: int, include_deleted: bool = False
     ) -> UserResponse:

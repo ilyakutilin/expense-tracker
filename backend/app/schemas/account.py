@@ -67,10 +67,13 @@ class AccountResponse(AccountResponseBaseWithCurrency):
     @model_serializer(mode="wrap")
     def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
         serialized = handler(self)
+        id_field_name, type_field_name = "id", "type"
+        if any([k.endswith("_") for k in serialized]):
+            id_field_name, type_field_name = "id_", "type_"
         key_order = [
-            "id",
+            id_field_name,
             "name",
-            "type",
+            type_field_name,
             "parent",
             "currency",
             "created_at",

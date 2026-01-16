@@ -7,10 +7,24 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
+from app.core.cache import cached, invalidate_cache
 from app.filters.tag import TagFilterParams
 from app.models.tag import TagORM
+from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.tag import TagCreateUpdate, TagResponse
+
+DETAIL_PATTERN = CachePattern(
+    entity=Entity.TAG,
+    obj_id_key="tag_id",
+    is_user_owned=True,
+)
+
+LIST_PATTERN = CachePattern(
+    entity=Entity.TAG,
+    obj_id_key=None,
+    is_user_owned=True,
+)
 
 
 class TagService:
@@ -56,14 +70,17 @@ class TagService:
             )
         return tag_orm
 
+    @cached(pattern=DETAIL_PATTERN, response_model=TagResponse)
     async def get_tag_by_id(
-        self, tag_id: int, include_deleted: bool = False
+        self, *, tag_id: int, include_deleted: bool = False
     ) -> TagResponse:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, include_deleted)
         return TagResponse.model_validate(tag_orm)
 
+    @cached(pattern=LIST_PATTERN, response_model=PaginatedResponse[TagResponse])
     async def get_all_tags(
         self,
+        *,
         filter_params: TagFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[TagResponse]:
@@ -91,7 +108,8 @@ class TagService:
             items=tags,
         )
 
-    async def create_tag(self, tag_create: TagCreateUpdate) -> TagResponse:
+    @invalidate_cache(LIST_PATTERN)
+    async def create_tag(self, *, tag_create: TagCreateUpdate) -> TagResponse:
         await self._check_name_exists(tag_create.name)
         tag_data: dict[str, Any] = tag_create.model_dump()
         tag_data["user_id"] = self.user_id
@@ -110,7 +128,10 @@ class TagService:
             )
         return TagResponse.model_validate(tag_orm)
 
-    async def update_tag(self, tag_id: int, tag_update: TagCreateUpdate) -> TagResponse:
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
+    async def update_tag(
+        self, *, tag_id: int, tag_update: TagCreateUpdate
+    ) -> TagResponse:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id)
 
         await self._check_name_exists(tag_update.name)
@@ -137,7 +158,8 @@ class TagService:
             updated_tag_orm = tag_orm
         return TagResponse.model_validate(updated_tag_orm)
 
-    async def delete_tag(self, tag_id: int, perm: bool = False) -> None:
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
+    async def delete_tag(self, *, tag_id: int, perm: bool = False) -> None:
         tag_orm: TagORM = await self._get_tag_orm_by_id(tag_id, perm)
 
         await self.crud.delete(self.db, obj_orm=tag_orm, perm=perm)

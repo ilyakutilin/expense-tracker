@@ -10,8 +10,10 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
+from app.core.cache import cached, invalidate_cache
 from app.filters.transaction import TransactionFilterParams
 from app.models.transaction import TransactionLineORM, TransactionORM
+from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.transaction import (
     TransactionCreate,
@@ -20,6 +22,18 @@ from app.schemas.transaction import (
     TransactionResponse,
     TransactionType,
     TransactionUpdate,
+)
+
+DETAIL_PATTERN = CachePattern(
+    entity=Entity.TRANSACTION,
+    obj_id_key="transaction_id",
+    is_user_owned=True,
+)
+
+LIST_PATTERN = CachePattern(
+    entity=Entity.TRANSACTION,
+    obj_id_key=None,
+    is_user_owned=True,
 )
 
 
@@ -84,16 +98,19 @@ class TransactionService:
             )
         return transaction_orm
 
+    @cached(pattern=DETAIL_PATTERN, response_model=TransactionResponse)
     async def get_transaction_by_id(
-        self, transaction_id: int, include_deleted: bool = False
+        self, *, transaction_id: int, include_deleted: bool = False
     ) -> TransactionResponse:
         transaction_orm: TransactionORM = await self._get_transaction_orm_by_id(
             transaction_id, include_deleted
         )
         return TransactionResponse.model_validate(transaction_orm)
 
+    @cached(pattern=LIST_PATTERN, response_model=PaginatedResponse[TransactionResponse])
     async def get_all_transactions(
         self,
+        *,
         filter_params: TransactionFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[TransactionResponse]:
@@ -121,7 +138,8 @@ class TransactionService:
             items=transactions,
         )
 
-    async def create_transaction(self, tc: TransactionCreate) -> TransactionResponse:
+    @invalidate_cache(LIST_PATTERN)
+    async def create_transaction(self, *, tc: TransactionCreate) -> TransactionResponse:
         from_, to = tc.lines
         await self._check_referential_integrity(
             [from_.account_id, to.account_id], tc.tag_ids
@@ -166,8 +184,9 @@ class TransactionService:
 
         return TransactionResponse.model_validate(transaction_orm)
 
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
     async def update_transaction(
-        self, transaction_id: int, tu: TransactionUpdate
+        self, *, transaction_id: int, tu: TransactionUpdate
     ) -> TransactionResponse:
         """Update the transaction by the given ID based on the provided data.
 
@@ -331,9 +350,24 @@ class TransactionService:
 
         await self.crud.commit(self.db)
 
-        return await self.get_transaction_by_id(transaction_id)
+        transaction_orm: TransactionORM | None = await self.crud.get_by_id(
+            self.db, obj_id=transaction_id, user_id=self.user_id, include_deleted=False
+        )
 
-    async def delete_transaction(self, transaction_id: int, perm: bool = False) -> None:
+        if not transaction_orm:
+            raise exc.CodeError(
+                (
+                    f"Could not fetch the updated transaction from the DB after update."
+                    f" Transaction ID: {transaction_id}, User ID: {self.user_id}"
+                )
+            )
+
+        return TransactionResponse.model_validate(transaction_orm)
+
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
+    async def delete_transaction(
+        self, *, transaction_id: int, perm: bool = False
+    ) -> None:
         transaction_orm: TransactionORM = await self._get_transaction_orm_by_id(
             transaction_id, perm
         )

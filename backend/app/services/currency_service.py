@@ -7,10 +7,24 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
+from app.core.cache import cached, invalidate_cache
 from app.filters.currency import CurrencyFilterParams
 from app.models.currency import CurrencyORM
 from app.schemas import currency as schemas
+from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
+
+DETAIL_PATTERN = CachePattern(
+    entity=Entity.CURRENCY,
+    obj_id_key="currency_id",
+    is_user_owned=True,
+)
+
+LIST_PATTERN = CachePattern(
+    entity=Entity.CURRENCY,
+    obj_id_key=None,
+    is_user_owned=True,
+)
 
 
 class CurrencyService:
@@ -45,8 +59,9 @@ class CurrencyService:
                 detail={"code": code, "user_id": self.user_id},
             )
 
+    @invalidate_cache(LIST_PATTERN)
     async def create_currency(
-        self, currency_create: schemas.CurrencyCreate
+        self, *, currency_create: schemas.CurrencyCreate
     ) -> schemas.CurrencyResponse:
         await self._check_code_exists(currency_create.code)
         currency_data: dict[str, Any] = currency_create.model_dump()
@@ -68,8 +83,9 @@ class CurrencyService:
             )
         return schemas.CurrencyResponse.model_validate(currency_orm)
 
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
     async def update_currency(
-        self, currency_id: int, currency_update: schemas.CurrencyUpdate
+        self, *, currency_id: int, currency_update: schemas.CurrencyUpdate
     ) -> schemas.CurrencyResponse:
         currency_orm: CurrencyORM = await self._get_currency_orm(currency_id)
 
@@ -100,17 +116,23 @@ class CurrencyService:
 
         return schemas.CurrencyResponse.model_validate(updated_currency_orm)
 
-    async def delete_currency(self, currency_id: int, perm: bool = False) -> None:
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
+    async def delete_currency(self, *, currency_id: int, perm: bool = False) -> None:
         currency: CurrencyORM = await self._get_currency_orm(currency_id, perm)
 
         await self.crud.delete(self.db, obj_orm=currency, perm=perm)
 
-    async def get_currency(self, currency_id: int) -> schemas.CurrencyResponse:
+    @cached(pattern=DETAIL_PATTERN, response_model=schemas.CurrencyResponse)
+    async def get_currency(self, *, currency_id: int) -> schemas.CurrencyResponse:
         currency_orm: CurrencyORM = await self._get_currency_orm(currency_id)
         return schemas.CurrencyResponse.model_validate(currency_orm)
 
+    @cached(
+        pattern=LIST_PATTERN, response_model=PaginatedResponse[schemas.CurrencyResponse]
+    )
     async def get_all_currencies(
         self,
+        *,
         filter_params: CurrencyFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[schemas.CurrencyResponse]:

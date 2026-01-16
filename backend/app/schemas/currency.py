@@ -27,6 +27,10 @@ class CurrencyResponse(CurrencyCreate):
 
     @model_serializer(mode="wrap")
     def sort_keys(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
-        serialized = handler(self)
-        key_order = ["id", "code", "symbol"]
+        serialized: dict[str, Any] = handler(self)
+        id_field_name = "id"
+        if any([k.endswith("_") for k in serialized]):
+            id_field_name = "id_"
+
+        key_order = [id_field_name, "code", "symbol"]
         return {k: serialized[k] for k in key_order}

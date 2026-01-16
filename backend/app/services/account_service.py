@@ -7,10 +7,24 @@ from sqlalchemy.ext.asyncio import (
 
 from app import crud
 from app.core import exceptions as exc
+from app.core.cache import cached, invalidate_cache
 from app.filters.account import AccountFilterParams
 from app.models.account import AccountORM
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
+from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
+
+DETAIL_PATTERN = CachePattern(
+    entity=Entity.ACCOUNT,
+    obj_id_key="account_id",
+    is_user_owned=True,
+)
+
+LIST_PATTERN = CachePattern(
+    entity=Entity.ACCOUNT,
+    obj_id_key=None,
+    is_user_owned=True,
+)
 
 
 class AccountService:
@@ -90,16 +104,19 @@ class AccountService:
                 detail={"account_id": account_id, "parent_id": parent_id},
             )
 
+    @cached(pattern=DETAIL_PATTERN, response_model=AccountResponse)
     async def get_account_by_id(
-        self, account_id: int, include_deleted: bool = False
+        self, *, account_id: int, include_deleted: bool = False
     ) -> AccountResponse:
         account_orm: AccountORM = await self._get_account_orm_by_id(
             account_id, include_deleted
         )
         return AccountResponse.model_validate(account_orm)
 
+    @cached(pattern=LIST_PATTERN, response_model=PaginatedResponse[AccountResponse])
     async def get_all_accounts(
         self,
+        *,
         filter_params: AccountFilterParams,
         include_deleted: bool = False,
     ) -> PaginatedResponse[AccountResponse]:
@@ -127,7 +144,8 @@ class AccountService:
             items=accounts,
         )
 
-    async def create_account(self, account_create: AccountCreate) -> AccountResponse:
+    @invalidate_cache(LIST_PATTERN)
+    async def create_account(self, *, account_create: AccountCreate) -> AccountResponse:
         await self._check_name_exists(account_create.name)
         await self._check_referential_integrity(
             account_create.parent_id, account_create.currency_id
@@ -151,8 +169,9 @@ class AccountService:
             )
         return AccountResponse.model_validate(account_orm)
 
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
     async def update_account(
-        self, account_id: int, account_update: AccountUpdate
+        self, *, account_id: int, account_update: AccountUpdate
     ) -> AccountResponse:
         account_orm: AccountORM = await self._get_account_orm_by_id(account_id)
 
@@ -188,7 +207,8 @@ class AccountService:
             updated_account_orm = account_orm
         return AccountResponse.model_validate(updated_account_orm)
 
-    async def delete_account(self, account_id: int, perm: bool = False) -> None:
+    @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
+    async def delete_account(self, *, account_id: int, perm: bool = False) -> None:
         account: AccountORM = await self._get_account_orm_by_id(account_id, perm)
 
         await self.crud.delete(self.db, obj_orm=account, perm=perm)

@@ -211,7 +211,7 @@ class TransactionLineResponse(BaseModel):
 class TransactionResponse(BaseModel):
     id_: int = Field(..., serialization_alias="id")
     type_: TransactionType = Field(..., serialization_alias="type")
-    lines: list[TransactionLineResponse] = Field(..., exclude=True)
+    lines: list[TransactionLineResponse] | None = Field(None, exclude=True)
     from_: TransactionLineResponse | None = Field(None, serialization_alias="from")
     to: TransactionLineResponse | None = None
     date: dt.date
@@ -228,7 +228,16 @@ class TransactionResponse(BaseModel):
 
     @model_validator(mode="after")
     def split_lines(self) -> "TransactionResponse":
+        if self.lines is None and (self.from_ is None or self.to is None):
+            raise ValueError(
+                "Either the 'lines', or 'to' and 'from' fields shall be set"
+            )
+
+        if self.lines is None and self.from_ is not None and self.to is not None:
+            return self
+
         lines = self.lines
+        assert lines is not None
 
         if len(lines) != 2:
             raise ValueError(f"Expected exactly 2 transaction lines, got {len(lines)}")

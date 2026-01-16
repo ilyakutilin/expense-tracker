@@ -58,6 +58,28 @@ class DBSettings(BaseSettings):
         )
 
 
+class RedisSettings(BaseSettings):
+    model_config = SETTINGS_MODEL_CONFIG.copy()
+    model_config["env_prefix"] = "redis_"
+
+    HOST: str = "localhost"
+    PORT: int = 6379
+    DB: int = 0
+    USERNAME: str = ""
+    PASSWORD: str = ""
+    EXPIRE_SECONDS: int = 3600
+
+    @property
+    def url(self) -> str:
+        return (
+            "redis://"
+            f"{self.USERNAME}"
+            f"{':' if self.PASSWORD else ''}{self.PASSWORD}"
+            f"{'@' if self.USERNAME or self.PASSWORD else ''}"
+            f"{self.HOST}:{self.PORT}/{self.DB}"
+        )
+
+
 class AuthSettings(BaseSettings):
     model_config = SETTINGS_MODEL_CONFIG.copy()
     model_config["env_prefix"] = "auth_"
@@ -91,6 +113,7 @@ class Settings(BaseSettings):
     log_settings: LogSettings = LogSettings()
     db_settings: DBSettings = DBSettings()
     auth_settings: AuthSettings = AuthSettings()
+    redis_settings: RedisSettings = RedisSettings()
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
