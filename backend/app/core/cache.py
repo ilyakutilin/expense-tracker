@@ -69,10 +69,10 @@ cache = RedisCache()
 def _serialize_value(value: Any) -> str:
     if isinstance(value, BaseModel):
         # Single Pydantic model
-        return value.model_dump_json()
+        return value.model_dump_json(by_alias=False)
     elif isinstance(value, list):
         if value and all(isinstance(item, BaseModel) for item in value):
-            return json.dumps([item.model_dump() for item in value])
+            return json.dumps([item.model_dump(by_alias=False) for item in value])
         else:
             return json.dumps(value)
     elif isinstance(value, (dict, list, str, int, float, bool, type(None))):
@@ -93,9 +93,9 @@ def _deserialize_value(
 
     try:
         if isinstance(parsed, list):
-            return [model_class.model_validate(item) for item in parsed]
+            return [model_class.model_validate(item, by_name=True) for item in parsed]
         else:
-            return model_class.model_validate(parsed)
+            return model_class.model_validate(parsed, by_name=True)
     except ValidationError as e:
         raise exc.CacheError(f"Failed to validate JSON from cache: {e}")
 
@@ -118,12 +118,13 @@ def _extract_user_id(args: tuple) -> int:
 def _interpolate_pattern(
     pattern: CachePattern, args: tuple[Any], kwargs: dict[str, Any]
 ) -> tuple[str, dict[str, Any]]:
+    kwargs_copy = kwargs.copy()
     if pattern.is_user_owned:
         user_id: int = _extract_user_id(args)
-        kwargs["user_id"] = user_id
+        kwargs_copy["user_id"] = user_id
 
     try:
-        interpolated_pattern = str(pattern).format(**kwargs)
+        interpolated_pattern = str(pattern).format(**kwargs_copy)
     except KeyError as e:
         raise exc.CacheError(
             f"Failed to interpolate the cache pattern: {e} is missing from kwargs"
@@ -211,7 +212,7 @@ def cached(
             except exc.CacheError as e:
                 logger.warning(e)
 
-            logger.info("No data in cache, will query the DB")
+            logger.info(f"No data in cache by key '{cache_key}', will query the DB")
             result = await func(*args, **kwargs)
 
             # Serialize and cache
