@@ -1,6 +1,5 @@
 import hashlib
 import json
-from enum import Enum
 from functools import wraps
 from typing import Any, Callable
 
@@ -10,26 +9,7 @@ from redis import asyncio as aioredis
 
 from app.core import exceptions as exc
 from app.core.settings import settings
-
-
-class Entity(str, Enum):
-    ACCOUNT = "account"
-    CURRENCY = "currency"
-    TAG = "tag"
-    TRANSACTION = "transaction"
-
-
-class ContentType(str, Enum):
-    DETAIL = "detail"
-    LIST = "list"
-
-
-class CachePrefix(BaseModel):
-    entity: Entity
-    content_type: ContentType
-
-    def __str__(self) -> str:
-        return f"{self.entity.value}:{self.content_type.value}"
+from app.schemas.cache import CachePattern
 
 
 class RedisCache:
@@ -63,22 +43,17 @@ class RedisCache:
             return False
         return await self.redis.set(key, value, ex=expire)
 
-    async def delete(self, key: str) -> int:
-        """Delete key from cache"""
-        if not self.redis:
-            return 0
-        return await self.redis.delete(key)
-
-    async def delete_pattern(self, pattern: str) -> int:
-        """Delete all keys matching pattern"""
+    async def delete(self, pattern: str) -> int:
         if not self.redis:
             return 0
 
-        keys = await self.redis.keys(pattern)
-        if not keys:
-            return 0
-
-        return await self.redis.delete(*keys)
+        if "*" in pattern:
+            keys = await self.redis.keys(pattern)
+            if not keys:
+                return 0
+            return await self.redis.delete(*keys)
+        else:
+            return await self.redis.delete(pattern)
 
     async def clear_all(self) -> bool:
         """Clear entire cache"""
@@ -92,16 +67,14 @@ cache = RedisCache()
 
 
 def _serialize_value(value: Any) -> str:
-    """
-    Serialize value to JSON string.
-    Handles Pydantic models, lists of models, and primitives.
-    """
     if isinstance(value, BaseModel):
         # Single Pydantic model
         return value.model_dump_json()
-    elif isinstance(value, list) and value and isinstance(value[0], BaseModel):
-        # List of Pydantic models
-        return json.dumps([item.model_dump() for item in value])
+    elif isinstance(value, list):
+        if value and all(isinstance(item, BaseModel) for item in value):
+            return json.dumps([item.model_dump() for item in value])
+        else:
+            return json.dumps(value)
     elif isinstance(value, (dict, list, str, int, float, bool, type(None))):
         # Standard JSON-serializable types
         return json.dumps(value)
@@ -113,13 +86,6 @@ def _serialize_value(value: Any) -> str:
 def _deserialize_value(
     data: str, model_class: type[BaseModel]
 ) -> BaseModel | list[BaseModel]:
-    """
-    Deserialize JSON string back to original Pydantic schema.
-
-    Args:
-        data: JSON string from Redis
-        model_class: Pydantic model class for deserialization
-    """
     if not data:
         raise exc.CacheError("No data in cache")
 
@@ -134,103 +100,50 @@ def _deserialize_value(
         raise exc.CacheError(f"Failed to validate JSON from cache: {e}")
 
 
-def _validate_prefix(prefix_or_pattern: str) -> str:
-    split = prefix_or_pattern.split(":", 2)
-    if len(split) < 2:
-        raise exc.CacheError(
-            f"Prefix validation failed: wrong prefix structure: {prefix_or_pattern}"
-        )
-
-    try:
-        validated_prefix = CachePrefix.model_validate(
-            {"entity": split[0], "content_type": split[1]}
-        )
-        return str(validated_prefix)
-
-    except ValidationError as e:
-        raise exc.CacheError(f"Prefix validation failed: {e}")
-
-
 def _extract_user_id(args: tuple) -> int:
-    """
-    Extract user_id from self.
-
-    Args:
-        args: Service method arguments tuple (first element should be 'self')
-
-    Raises:
-        CacheError: if there are no args, or if there are more than one arg
-            (all arguments in the services are supposed to be keyword arguments),
-            or if there is no user_id in self (only the user owned services are cached).
-
-    Returns:
-        user_id if found in self
-    """
     if not args:
         raise exc.CacheError(
             "No args in the service method, so there is no self "
             "and it's not possible to extract user_id"
         )
 
-    if len(args) > 1:
+    for arg in args:
+        user_id = getattr(arg, "user_id", None)
+        if user_id and isinstance(user_id, int):
+            return user_id
+
+    raise exc.CacheError(f"User ID has not been found in args: {args}")
+
+
+def _interpolate_pattern(
+    pattern: CachePattern, args: tuple[Any], kwargs: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    if pattern.is_user_owned:
+        user_id: int = _extract_user_id(args)
+        kwargs["user_id"] = user_id
+
+    try:
+        interpolated_pattern = str(pattern).format(**kwargs)
+    except KeyError as e:
         raise exc.CacheError(
-            f"There are {len(args)} args in the service method, while all arguments "
-            "in the services are supposed to be keyword arguments"
+            f"Failed to interpolate the cache pattern: {e} is missing from kwargs"
         )
 
-    if args and not hasattr(args[0], "user_id"):
-        raise exc.CacheError("There is no user_id in the self of the service method")
+    remaining_kwargs = kwargs.copy()
+    if pattern.obj_id_key:
+        remaining_kwargs.pop(pattern.obj_id_key)
 
-    assert len(args) > 0
-    return args[0].user_id
-
-
-def _extract_object_id_kv(params: dict[str, Any]) -> tuple[str, int]:
-    obj_id_kvs: list[tuple[str, int]] = []
-    for k, v in params.items():
-        if k.endswith("_id") and isinstance(v, int) and not isinstance(v, bool):
-            obj_id_kvs.append((k, params.pop(k)))
-
-    if len(obj_id_kvs) == 0:
-        raise exc.CacheError("Could not find the object id key in kwargs")
-
-    if len(obj_id_kvs) > 1:
-        raise exc.CacheError(
-            f"There are {len(obj_id_kvs)} id keys in kwargs while only one is expected"
-        )
-
-    return obj_id_kvs[0]
+    return interpolated_pattern, remaining_kwargs
 
 
-def _generate_cache_key(prefix: str, kwargs: dict[str, Any], user_id: int) -> str:
-    """
-    Generate unique cache key.
-    Keys are deterministic - same params always produce same key.
+def _generate_cache_key(
+    pattern: CachePattern, args: tuple[Any], kwargs: dict[str, Any]
+) -> str:
+    interpolated_pattern, remaining_kwargs = _interpolate_pattern(pattern, args, kwargs)
 
-    Format: prefix:user_id=X:param1=value1:param2=value2
+    key_parts: list[str] = [interpolated_pattern]
 
-    Args:
-        prefix: Cache key prefix (e.g., 'transaction:list')
-        kwargs: Dict of kwargs passed to the service method
-        user_id: User ID to include in key (for multi-tenant isolation)
-
-    Raises:
-        CacheError: if the critical parts of the key to be generated are missing
-            (like the object ID if applicable) or if the key generation fails
-            for other reasons
-    """
-    key_parts = [_validate_prefix(prefix)]
-
-    # Add user_id first
-    key_parts.append(f"user_id={user_id}")
-
-    # Get the object ID
-    if ":detail" in prefix:
-        obj_id_key, obj_id = _extract_object_id_kv(kwargs)
-        key_parts.append(f"{obj_id_key}={obj_id}")
-
-    # Sort kwargs for consistency
-    for k, v in sorted(kwargs.items()):
+    for k, v in sorted(remaining_kwargs.items()):
         if isinstance(v, (str, int, float, bool)) or v is None:
             key_parts.append(f"{k}={v}")
         elif isinstance(v, (list, tuple)):
@@ -246,70 +159,63 @@ def _generate_cache_key(prefix: str, kwargs: dict[str, Any], user_id: int) -> st
     return ":".join(key_parts)
 
 
-async def _invalidate_entire_entity(pattern: str):
-    raw_entity = pattern.split(":", 1)[0]
-    try:
-        entity = Entity(raw_entity)
-        logger.warning(f"The entire {entity.value} entity will now be invalidated")
-        await cache.delete_pattern(f"{entity.value}*")
-    except ValueError:
+async def _emergency_invalidation(entity: str):
+    delete_count = await cache.delete(entity + "*")
+    if delete_count == 0:
         logger.warning(
-            f"Incorrect entity {raw_entity} - failed to invalidate. "
-            "The entire cache DB will now be erased"
+            (
+                f"Failed to invalidate cache for the entire {entity} entity. "
+                "Will flush the entire cache now"
+            )
         )
-        await cache.clear_all()
+        success = await cache.clear_all()
+        if success:
+            logger.warning(
+                (
+                    "The entire cache has been flushed. This should not have happened "
+                    "under normal operation and requires further troubleshoting"
+                )
+            )
+        else:
+            logger.warning("An attempt to flush the entire cache DB failed")
+    else:
+        logger.warning(
+            (
+                f"Cache for the entire {entity} entity has been deleted. This should "
+                "not have happened under normal operation and requires further "
+                "troubleshoting"
+            )
+        )
 
 
 def cached(
-    prefix: str,
-    model_class: type[BaseModel],
+    *,
+    pattern: CachePattern,
+    response_model: type[BaseModel],
     expire: int = settings.redis_settings.EXPIRE_SECONDS,
 ):
-    """
-    Decorator for caching function results with proper Pydantic serialization.
-    Automatically extracts user_id from self if available.
-    Expands Pydantic filter models into readable cache keys.
-
-    Args:
-        prefix: Cache key prefix (e.g., 'transaction:list', 'account:detail')
-        model_class: Pydantic model class for deserialization
-        expire: Cache expiration in seconds
-
-    Examples:
-        # Single item with user_id in self
-        @cached(prefix="account:detail", expire=3600)
-        async def get_account(self, account_id: int):
-            # Key: "account:detail:user_id=123:account_id=5"
-
-        # List with filter model
-        @cached(prefix="account:list")
-        async def get_expenses(self, filters: AccountFilters):
-            # filters = AccountFilters(page=1, page_size=10, type='asset')
-            # Key: "account:list:user_id=123:page=1:page_size=10:type=asset"
-    """
-
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            cache_key: str = ""
             try:
-                # Extract user_id from self
-                user_id: int = _extract_user_id(args)
-
                 # Generate cache key
-                cache_key = _generate_cache_key(prefix, kwargs, user_id)
+                cache_key = _generate_cache_key(pattern, args, kwargs)
 
                 # Try to get from cache
                 cached_data = await cache.get(cache_key)
                 if cached_data:
-                    return _deserialize_value(cached_data, model_class)
+                    deserialized = _deserialize_value(cached_data, response_model)
+                    logger.info(f"Cache hit for {cache_key}")
+                    return deserialized
             except exc.CacheError as e:
                 logger.warning(e)
 
-            # Execute function and cache result
+            logger.info("No data in cache, will query the DB")
             result = await func(*args, **kwargs)
 
             # Serialize and cache
-            if result is not None:
+            if result is not None and cache_key:
                 serialized = _serialize_value(result)
                 success = await cache.set(cache_key, serialized, expire)
                 if not success:
@@ -322,62 +228,38 @@ def cached(
     return decorator
 
 
-def invalidate_cache(*patterns: str):
-    """
-    Decorator to invalidate cache patterns after function execution.
-    Supports parameter interpolation using curly braces.
-    Automatically extracts user_id from self if available.
-
-    Args:
-        patterns: Cache key patterns to invalidate
-            (supports wildcards and {param} interpolation)
-    """
-
+def invalidate_cache(*patterns: CachePattern):
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             result = await func(*args, **kwargs)
 
-            if not patterns:
-                logger.warning("No patterns to invalidate")
-
-            try:
-                # Extract user_id from self
-                user_id = _extract_user_id(args)
-
-                # Add user_id to kwargs for interpolation
-                if user_id is not None:
-                    kwargs["user_id"] = user_id
-            except exc.CacheError as e:
-                logger.warning(e)
-                await _invalidate_entire_entity(patterns[0])
-
-            # Invalidate specified cache patterns with interpolation
             for pattern in patterns:
                 try:
-                    # Interpolate parameters into normalized pattern
-                    interpolated_pattern = pattern.format(**kwargs)
+                    interpolated_pattern, _ = _interpolate_pattern(
+                        pattern, args, kwargs
+                    )
 
-                    # Check if it's a wildcard pattern or exact key
-                    if "*" in interpolated_pattern:
-                        await cache.delete_pattern(interpolated_pattern)
-                        return
-                    else:
-                        await cache.delete(interpolated_pattern)
-                        return
-                except KeyError as e:
+                    deleted_count = await cache.delete(interpolated_pattern + "*")
+                    if pattern.obj_id_key and deleted_count == 0:
+                        logger.warning(
+                            (
+                                f"Key following the pattern {str(pattern)} has not "
+                                "been found in cache. Will invalidate cache for the "
+                                f"entire {pattern.entity} entity"
+                            )
+                        )
+                        await _emergency_invalidation(pattern.entity.value)
+
+                except exc.CacheError as e:
                     logger.warning(
                         (
-                            f"Warning: Cache invalidation pattern '{pattern}' "
-                            f"references missing parameter: {e}"
+                            f"Failed to invalidate cache for pattern {str(pattern)}: "
+                            f"{e}. Will invalidate cache for the entire "
+                            f"{pattern.entity} entity"
                         )
                     )
-                except Exception as e:
-                    raise exc.CacheError(
-                        f"Error interpolating cache pattern '{pattern}': {e}"
-                    )
-
-            await _invalidate_entire_entity(pattern)
+                    await _emergency_invalidation(pattern.entity.value)
 
             return result
 
