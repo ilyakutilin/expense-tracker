@@ -23,17 +23,27 @@ class RedisCache:
             encoding="utf-8",
             decode_responses=True,  # Get strings back, not bytes
         )
+        if self.redis is not None:
+            logger.info("CACHE: Redis cache successfully initiated")
+        else:
+            logger.warning("CACHE: Failed to initiate Redis cache")
 
     async def disconnect(self):
         """Close Redis connection"""
         if self.redis:
             await self.redis.aclose()
+            logger.info("CACHE: Redis cache closed")
 
     async def get(self, key: str) -> str | None:
         """Get raw value from cache"""
         if not self.redis:
             return None
-        return await self.redis.get(key)
+        result = await self.redis.get(key)
+        if result is not None:
+            logger.info(f"CACHE: Hit for {key}")
+        else:
+            logger.info(f"CACHE: No result for {key}")
+        return result
 
     async def set(
         self, key: str, value: str, expire: int = settings.redis_settings.EXPIRE_SECONDS
@@ -41,7 +51,16 @@ class RedisCache:
         """Set raw value in cache with expiration"""
         if not self.redis:
             return False
-        return await self.redis.set(key, value, ex=expire)
+        result = await self.redis.set(key, value, ex=expire)
+        if result:
+            logger.info(
+                f"CACHE: successfully set with key {key}, value: {str(value)[:50]}"
+            )
+        else:
+            logger.warning(
+                f"CACHE: Failed to set with key {key} for value {str(value)[:50]}"
+            )
+        return result
 
     async def delete(self, pattern: str) -> int:
         if not self.redis:
@@ -50,16 +69,35 @@ class RedisCache:
         if "*" in pattern:
             keys = await self.redis.keys(pattern)
             if not keys:
+                logger.info(f"CACHE: No keys found to delete by pattern {pattern}")
                 return 0
-            return await self.redis.delete(*keys)
+            result = await self.redis.delete(*keys)
         else:
-            return await self.redis.delete(pattern)
+            result = await self.redis.delete(pattern)
+
+        if result:
+            logger.info(
+                (
+                    f"CACHE: {result} key{'s' if result > 1 else ''} "
+                    f"deleted by pattern {pattern}"
+                )
+            )
+        else:
+            logger.info(f"CACHE: No keys deleted by pattern {pattern}")
+
+        return result
 
     async def clear_all(self) -> bool:
         """Clear entire cache"""
         if not self.redis:
             return False
-        return await self.redis.flushdb()
+        result = await self.redis.flushdb()
+        if result:
+            logger.warning(("CACHE: The entire cache has been flushed"))
+        else:
+            logger.warning("CACHE: At attempt to flush the entire cache failed")
+
+        return result
 
 
 # Global cache instance
@@ -207,12 +245,10 @@ def cached(
                 cached_data = await cache.get(cache_key)
                 if cached_data:
                     deserialized = _deserialize_value(cached_data, response_model)
-                    logger.info(f"Cache hit for {cache_key}")
                     return deserialized
             except exc.CacheError as e:
                 logger.warning(e)
 
-            logger.info(f"No data in cache by key '{cache_key}', will query the DB")
             result = await func(*args, **kwargs)
 
             # Serialize and cache
@@ -241,23 +277,14 @@ def invalidate_cache(*patterns: CachePattern):
                         pattern, args, kwargs
                     )
 
-                    deleted_count = await cache.delete(interpolated_pattern + "*")
-                    if pattern.obj_id_key and deleted_count == 0:
-                        logger.warning(
-                            (
-                                f"Key following the pattern {str(pattern)} has not "
-                                "been found in cache. Will invalidate cache for the "
-                                f"entire {pattern.entity} entity"
-                            )
-                        )
-                        await _emergency_invalidation(pattern.entity.value)
+                    await cache.delete(interpolated_pattern + "*")
 
                 except exc.CacheError as e:
                     logger.warning(
                         (
                             f"Failed to invalidate cache for pattern {str(pattern)}: "
                             f"{e}. Will invalidate cache for the entire "
-                            f"{pattern.entity} entity"
+                            f"{pattern.entity.value} entity"
                         )
                     )
                     await _emergency_invalidation(pattern.entity.value)
