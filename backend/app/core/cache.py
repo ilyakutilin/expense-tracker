@@ -108,14 +108,6 @@ class RedisCache:
 cache = RedisCache()
 
 
-async def get_from_cache(key: str) -> Any:
-    return await cache.get(key)
-
-
-async def set_cache(key: str, value: Any) -> bool:
-    return await cache.set(key, value)
-
-
 def _serialize_value(value: Any) -> str:
     if isinstance(value, BaseModel):
         # Single Pydantic model
