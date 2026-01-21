@@ -399,8 +399,9 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
             ]
         )
 
-        transaction_tags: list[TagORM] = random.sample(tags, random.randint(1, len(tags)))
-        transaction_orm.tags.extend(transaction_tags)
+        if random.random() < 0.6:
+            transaction_tags = random.sample(tags, random.randint(1, len(tags)))
+            transaction_orm.tags.extend(transaction_tags)
 
         transactions.append(transaction_orm)
 
