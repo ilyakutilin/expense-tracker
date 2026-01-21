@@ -21,7 +21,7 @@ from app.models.base import BaseORM
 from app.models.currency import CurrencyORM
 from app.models.tag import TagORM
 from app.models.transaction import TransactionLineORM, TransactionORM, transaction_tag
-from app.models.user import UserORM
+from app.models.user import UserORM, UserRole
 from app.schemas.account import AccountType
 from app.schemas.transaction import TransactionType
 
@@ -113,6 +113,7 @@ def _get_user_orms() -> tuple[UserORM, UserORM, UserORM]:
     admin = UserORM(
         email="admin@example.com",
         password_hash=get_password_hash("adminpassword"),
+        role=UserRole.ADMIN,
         created_at=_generate_offset_datetime(NOW, "d", -START_DAYS_AGO),
         updated_at=_generate_offset_datetime(NOW, "d", -7),
         is_deleted=False,
@@ -121,6 +122,7 @@ def _get_user_orms() -> tuple[UserORM, UserORM, UserORM]:
     regular_user = UserORM(
         email="john.smith@example.com",
         password_hash=get_password_hash("userpassword"),
+        role=UserRole.USER,
         created_at=_generate_offset_datetime(admin.created_at, "d", 1),
         updated_at=_generate_offset_datetime(NOW, "d", -4),
         is_deleted=False,
@@ -130,6 +132,7 @@ def _get_user_orms() -> tuple[UserORM, UserORM, UserORM]:
     deleted_user = UserORM(
         email="deleted.user@example.com",
         password_hash=get_password_hash("deletedpassword"),
+        role=UserRole.USER,
         created_at=timestamp,
         updated_at=timestamp,
         is_deleted=True,
