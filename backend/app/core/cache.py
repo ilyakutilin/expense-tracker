@@ -1,7 +1,7 @@
 import hashlib
 import json
 from functools import wraps
-from typing import Any, Callable
+from typing import Any, Callable, Coroutine, ParamSpec, TypeVar, cast
 
 from loguru import logger
 from pydantic import BaseModel, ValidationError
@@ -10,6 +10,10 @@ from redis import asyncio as aioredis
 from app.core import exceptions as exc
 from app.core.settings import settings
 from app.schemas.cache import CachePattern
+
+# Type variables for proper decorator typing
+P = ParamSpec("P")  # Preserves function parameters
+T = TypeVar("T")  # Preserves return type
 
 
 class RedisCache:
@@ -162,7 +166,7 @@ def _extract_user_id(args: tuple) -> int:
 
 
 def _interpolate_pattern(
-    pattern: CachePattern, args: tuple[Any], kwargs: dict[str, Any]
+    pattern: CachePattern, args: tuple[object, ...], kwargs: dict[str, Any]
 ) -> tuple[str, dict[str, Any]]:
     kwargs_copy = kwargs.copy()
     if pattern.is_user_owned:
@@ -184,7 +188,7 @@ def _interpolate_pattern(
 
 
 def _generate_cache_key(
-    pattern: CachePattern, args: tuple[Any], kwargs: dict[str, Any]
+    pattern: CachePattern, args: tuple[object, ...], kwargs: dict[str, Any]
 ) -> str:
     interpolated_pattern, remaining_kwargs = _interpolate_pattern(pattern, args, kwargs)
 
@@ -240,10 +244,14 @@ def cached(
     pattern: CachePattern,
     response_model: type[BaseModel],
     expire: int = settings.redis_settings.EXPIRE_SECONDS,
-):
-    def decorator(func: Callable):
+) -> Callable[
+    [Callable[P, Coroutine[Any, Any, T]]], Callable[P, Coroutine[Any, Any, T]]
+]:
+    def decorator(
+        func: Callable[P, Coroutine[Any, Any, T]],
+    ) -> Callable[P, Coroutine[Any, Any, T]]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: P.args, **kwargs: P.kwargs):
             cache_key: str = ""
             try:
                 # Generate cache key
@@ -253,7 +261,7 @@ def cached(
                 cached_data = await cache.get(cache_key)
                 if cached_data:
                     deserialized = _deserialize_value(cached_data, response_model)
-                    return deserialized
+                    return cast(T, deserialized)
             except exc.CacheError as e:
                 logger.warning(e)
 
@@ -266,17 +274,23 @@ def cached(
                 if not success:
                     logger.warning(f"Failed to set the cache by key {cache_key}")
 
-            return result
+            return cast(T, result)
 
-        return wrapper
+        return cast(Callable[P, Coroutine[Any, Any, T]], wrapper)
 
     return decorator
 
 
-def invalidate_cache(*patterns: CachePattern):
-    def decorator(func: Callable):
+def invalidate_cache(
+    *patterns: CachePattern,
+) -> Callable[
+    [Callable[P, Coroutine[Any, Any, T]]], Callable[P, Coroutine[Any, Any, T]]
+]:
+    def decorator(
+        func: Callable[P, Coroutine[Any, Any, T]],
+    ) -> Callable[P, Coroutine[Any, Any, T]]:
         @wraps(func)
-        async def wrapper(*args, **kwargs):
+        async def wrapper(*args: P.args, **kwargs: P.kwargs):
             result = await func(*args, **kwargs)
 
             for pattern in patterns:
@@ -299,6 +313,6 @@ def invalidate_cache(*patterns: CachePattern):
 
             return result
 
-        return wrapper
+        return cast(Callable[P, Coroutine[Any, Any, T]], wrapper)
 
     return decorator
