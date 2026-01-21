@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Text
@@ -12,9 +13,15 @@ if TYPE_CHECKING:
     from app.models.transaction import TransactionORM
 
 
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
+
+
 class UserORM(BaseORM):
     email: Mapped[str] = mapped_column(Text, unique=True)
     password_hash: Mapped[str] = mapped_column(Text)
+    role: Mapped[str] = mapped_column(Text, default=UserRole.USER)
 
     accounts: Mapped[list["AccountORM"]] = relationship(
         "AccountORM",
