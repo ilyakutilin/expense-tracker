@@ -28,7 +28,7 @@ LIST_PATTERN = CachePattern(
 
 
 class UserService:
-    def __init__(self, db: AsyncSession, user_id: int):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.crud: CRUDUser = user_crud
 

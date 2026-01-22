@@ -3,6 +3,7 @@ from app.services.auth_service import AuthService
 from app.services.currency_service import CurrencyService
 from app.services.tag_service import TagService
 from app.services.transaction_service import TransactionService
+from app.services.user_service import UserService
 
 __all__ = [
     "CurrencyService",
@@ -10,4 +11,5 @@ __all__ = [
     "TagService",
     "TransactionService",
     "AuthService",
+    "UserService",
 ]
