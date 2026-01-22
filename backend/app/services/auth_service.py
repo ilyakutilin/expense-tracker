@@ -13,8 +13,9 @@ from app.core.auth.security import (
 )
 from app.core.cache import cached
 from app.models.user import UserORM
-from app.schemas.auth import Token, UserRegister, UserResponse
+from app.schemas.auth import Token, UserRegister
 from app.schemas.cache import CachePattern, Entity
+from app.schemas.user import UserResponse
 
 
 class AuthService:

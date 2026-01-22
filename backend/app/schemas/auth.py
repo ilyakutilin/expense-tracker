@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
 
 from app.models.user import UserRole
@@ -31,18 +29,6 @@ class TokenData(BaseModel):
     """Schema for decoded token data."""
 
     user_id: int | None = None
-
-
-class UserResponse(BaseModel):
-    """Schema for user data in responses."""
-
-    id_: int = Field(..., serialization_alias="id")
-    email: str
-    role: str
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class UserDep(BaseModel):
