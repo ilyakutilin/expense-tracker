@@ -179,7 +179,7 @@ def _get_currency_orms(user: UserORM) -> list[CurrencyORM]:
             CurrencyORM(
                 code=cd.code,
                 symbol=cd.symbol,
-                user_id=user.id_,
+                user=user,
                 created_at=cd.created_at,
                 updated_at=cd.updated_at,
                 is_deleted=cd.deleted,
@@ -195,7 +195,7 @@ def _get_account_orms(user: UserORM, currencies: list[CurrencyORM]) -> dict[str,
     savings = AccountORM(
         name="Накопления",
         type_=AccountType.ASSET.value,
-        user_id=user.id_,
+        user=user,
         created_at=timestamp,
         updated_at=timestamp,
     )
@@ -204,7 +204,7 @@ def _get_account_orms(user: UserORM, currencies: list[CurrencyORM]) -> dict[str,
     expenses = AccountORM(
         name="Расходы",
         type_=AccountType.EXPENSE.value,
-        user_id=user.id_,
+        user=user,
         created_at=timestamp,
         updated_at=timestamp,
     )
@@ -251,13 +251,14 @@ def _get_account_orms(user: UserORM, currencies: list[CurrencyORM]) -> dict[str,
         "savings_parent": savings,
         "expenses_parent": expenses,
     }
+    # TODO: Why no parent??
     for key, acc in account_data.items():
         accounts[key] = AccountORM(
             name=acc.name,
             type_=acc.type_.value,
-            user_id=user.id_,
-            parent_id=acc.parent.id_ if acc.parent else None,
-            currency_id=currencies[acc.currency_index].id_,
+            user=user,
+            parent=acc.parent if acc.parent else None,
+            currency=currencies[acc.currency_index],
             created_at=acc.created_at,
             updated_at=acc.updated_at,
             is_deleted=acc.deleted,
@@ -277,7 +278,7 @@ def _get_tag_orms(user: UserORM, qty: int = 5) -> list[TagORM]:
         tags.append(
             TagORM(
                 name=f"Тег {i}",
-                user_id=user.id_,
+                user=user,
                 created_at=timestamp,
                 updated_at=timestamp,
             )
@@ -311,9 +312,6 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
             self.deleted = deleted
             super().__init__(deleted)
 
-        @property
-        def user_id(self) -> int:
-            return user.id_
 
         @property
         def date(self) -> date:
@@ -372,7 +370,7 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
             date=td.date,
             comment=td.comment,
             is_template=td.is_template,
-            user_id=td.user_id,
+            user=user,
             created_at=td.created_at,
             updated_at=td.updated_at,
             is_deleted=td.deleted,
@@ -382,8 +380,7 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
         transaction_orm.lines.extend(
             [
                 TransactionLineORM(
-                    transaction_id=transaction_orm.id_,
-                    account_id=accounts[td.from_acc_key].id_,
+                    account=accounts[td.from_acc_key],
                     amount=Decimal(td.from_amount),
                     created_at=td.created_at,
                     updated_at=td.updated_at,
@@ -391,8 +388,7 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
                     deleted_at=td.deleted_at,
                 ),
                 TransactionLineORM(
-                    transaction_id=transaction_orm.id_,
-                    account_id=accounts[td.to_acc_key].id_,
+                    account=accounts[td.to_acc_key],
                     amount=Decimal(td.to_amount),
                     created_at=td.created_at,
                     updated_at=td.updated_at,
@@ -430,19 +426,16 @@ async def seed_data():
         print("Seeding database with test data...")
 
         # Create users
-        admin, regular_user, deleted_user = _get_user_orms()
-        session.add_all([admin, regular_user, deleted_user])
-        await session.flush()
+        admin_user, regular_user, deleted_user = _get_user_orms()
+        session.add_all([admin_user, regular_user, deleted_user])
 
         # Create currencies
         currencies = _get_currency_orms(regular_user)
         session.add_all(currencies)
-        await session.flush()
 
         # Create accounts
         accounts: dict[str, AccountORM] = _get_account_orms(regular_user, currencies)
         session.add_all(accounts.values())
-        await session.flush()
 
         # Create tags
         tags = _get_tag_orms(regular_user)
@@ -451,12 +444,11 @@ async def seed_data():
         # Create transactions
         transactions = _get_transaction_orms(regular_user, accounts, tags)
         session.add_all(transactions)
-        await session.flush()
 
         # Commit all changes
         await session.commit()
         print("✓ Database seeded successfully!")
-        print(f"  - Created {len([admin, regular_user, deleted_user])} users")
+        print(f"  - Created {len([admin_user, regular_user, deleted_user])} users")
         print(f"  - Created {len(currencies)} currencies")
         print(f"  - Created {len(accounts)} accounts")
         print(f"  - Created {len(tags)} tags")
