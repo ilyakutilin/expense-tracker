@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import get_auth_service
-from app.core.auth.dependency import get_current_user_id
-from app.schemas.auth import Token, UserRegister, UserResponse
+from app.core.auth.dependency import get_current_user
+from app.schemas.auth import Token, UserDep, UserRegister
+from app.schemas.user import UserResponse
 from app.services.auth_service import AuthService
 
 router = APIRouter()
@@ -66,6 +67,6 @@ async def login(
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     auth_service: AuthService = Depends(get_auth_service),
-    user_id: int = Depends(get_current_user_id),
+    user: UserDep = Depends(get_current_user),
 ) -> UserResponse:
-    return await auth_service.get_user_by_id(user_id)
+    return await auth_service.get_user_by_id(user.id_)

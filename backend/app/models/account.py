@@ -46,7 +46,7 @@ class AccountORM(UserOwnedBaseORM):
         order_by="desc(TransactionLineORM.id_)",
     )
 
-    user: Mapped["UserORM | None"] = relationship(
+    user: Mapped["UserORM"] = relationship(
         "UserORM",
         back_populates="accounts",
     )

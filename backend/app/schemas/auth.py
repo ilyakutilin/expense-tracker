@@ -1,6 +1,6 @@
-from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
+
+from app.models.user import UserRole
 
 
 class UserRegister(BaseModel):
@@ -8,7 +8,6 @@ class UserRegister(BaseModel):
 
     email: EmailStr
     password: SecretStr = Field(..., min_length=8, max_length=100, exclude=True)
-    password_hash: str | None = None
 
 
 class UserLogin(BaseModel):
@@ -31,12 +30,10 @@ class TokenData(BaseModel):
     user_id: int | None = None
 
 
-class UserResponse(BaseModel):
-    """Schema for user data in responses."""
+class UserDep(BaseModel):
+    """Schema for the user dependency."""
 
-    id_: int = Field(..., serialization_alias="id")
-    email: str
-    created_at: datetime
-    updated_at: datetime
+    id_: int
+    role: UserRole
 
     model_config = ConfigDict(from_attributes=True)

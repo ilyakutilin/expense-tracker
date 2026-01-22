@@ -19,7 +19,7 @@ class CurrencyORM(UserOwnedBaseORM):
         back_populates="currency",
     )
 
-    user: Mapped["UserORM | None"] = relationship(
+    user: Mapped["UserORM"] = relationship(
         "UserORM",
         back_populates="currencies",
     )

@@ -27,7 +27,7 @@ class TagORM(UserOwnedBaseORM):
         .scalar_subquery()
     )
 
-    user: Mapped["UserORM | None"] = relationship(
+    user: Mapped["UserORM"] = relationship(
         "UserORM",
         back_populates="tags",
     )

@@ -6,6 +6,7 @@ from app.api.endpoints import (
     currency_router,
     tag_router,
     transaction_router,
+    user_router,
 )
 
 main_router = APIRouter(prefix="/api/v1")
@@ -16,3 +17,4 @@ main_router.include_router(
     transaction_router, prefix="/transactions", tags=["Transactions"]
 )
 main_router.include_router(auth_router, prefix="/auth", tags=["Auth"])
+main_router.include_router(user_router, prefix="/users", tags=["Users"])
