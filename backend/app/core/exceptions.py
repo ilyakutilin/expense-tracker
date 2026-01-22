@@ -12,11 +12,13 @@ class AppException(Exception):
         status_code: int = 500,
         message: str = "Internal server error",
         detail: Any = None,
+        headers: dict[str, str] | None = None,
         error_code: Optional[str] = None,
     ):
         self.status_code = status_code
         self.message = message
         self.detail = detail
+        self.headers = headers
         self.error_code = error_code
         super().__init__(self.message)
 
@@ -39,9 +41,17 @@ class BadRequestError(AppException):
 
 
 class UnauthorizedError(AppException):
-    def __init__(self, message: str = "Unauthorized", detail: Any = None):
+    def __init__(
+        self,
+        message: str = "Unauthorized",
+        detail: Any = None,
+        headers: dict[str, str] = {"WWW-Authenticate": "Bearer"},
+    ):
         super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED, message=message, detail=detail
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            message=message,
+            detail=detail,
+            headers=headers,
         )
 
 

@@ -54,7 +54,6 @@ async def get_current_user(
     """
     credentials_exception = UnauthorizedError(
         message="Could not validate credentials",
-        detail={"headers": {"WWW-Authenticate": "Bearer"}},
     )
 
     # Decode token

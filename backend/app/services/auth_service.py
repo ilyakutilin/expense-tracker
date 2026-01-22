@@ -72,7 +72,6 @@ class AuthService:
 
         err = exc.UnauthorizedError(
             message="Incorrect email or password",
-            detail={"headers": {"WWW-Authenticate": "Bearer"}},
         )
 
         if not user_orm:
