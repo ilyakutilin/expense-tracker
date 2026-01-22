@@ -13,7 +13,7 @@ from app.filters.user import UserFilterParams
 from app.models.user import UserORM
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
-from app.schemas.user import UserCreate, UserResponse, UserUpdate
+from app.schemas.user import UserCreate, UserResponseAdmin, UserUpdate
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.USER,
@@ -56,20 +56,20 @@ class UserService:
                 detail={"email": email},
             )
 
-    @cached(pattern=DETAIL_PATTERN, response_model=UserResponse)
+    @cached(pattern=DETAIL_PATTERN, response_model=UserResponseAdmin)
     async def get_user_by_id(
         self, *, user_id: int, include_deleted: bool = False
-    ) -> UserResponse:
+    ) -> UserResponseAdmin:
         user_orm: UserORM = await self._get_user_orm_by_id(user_id, include_deleted)
-        return UserResponse.model_validate(user_orm)
+        return UserResponseAdmin.model_validate(user_orm)
 
-    @cached(pattern=LIST_PATTERN, response_model=PaginatedResponse[UserResponse])
+    @cached(pattern=LIST_PATTERN, response_model=PaginatedResponse[UserResponseAdmin])
     async def get_all_users(
         self,
         *,
         filter_params: UserFilterParams,
         include_deleted: bool = False,
-    ) -> PaginatedResponse[UserResponse]:
+    ) -> PaginatedResponse[UserResponseAdmin]:
         conditions = filter_params.manager.build_conditions(filter_params)
 
         user_orms, total_count = await self.crud.get_all(
@@ -78,12 +78,12 @@ class UserService:
             include_deleted=include_deleted,
             unique=True,
         )
-        users = [UserResponse.model_validate(t) for t in user_orms]
+        users = [UserResponseAdmin.model_validate(t) for t in user_orms]
 
         if total_count is None:
             raise exc.CodeError("Total count of users cannot be None")
 
-        return PaginatedResponse[UserResponse](
+        return PaginatedResponse[UserResponseAdmin](
             total=total_count,
             page=filter_params.page,
             page_size=filter_params.page_size,
@@ -94,7 +94,7 @@ class UserService:
         )
 
     @invalidate_cache(LIST_PATTERN)
-    async def create_user(self, *, user_create: UserCreate) -> UserResponse:
+    async def create_user(self, *, user_create: UserCreate) -> UserResponseAdmin:
         await self._check_email_exists(user_create.email)
         user_data: dict[str, Any] = user_create.model_dump()
         hashed_password = get_password_hash(str(user_create.password))
@@ -108,12 +108,12 @@ class UserService:
                 message=("Created user could not be fetched from the database"),
                 detail={"id": user_id, "email": user_create.email},
             )
-        return UserResponse.model_validate(user_orm)
+        return UserResponseAdmin.model_validate(user_orm)
 
     @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
     async def update_user(
         self, *, user_id: int, user_update: UserUpdate
-    ) -> UserResponse:
+    ) -> UserResponseAdmin:
         user_orm: UserORM = await self._get_user_orm_by_id(user_id)
 
         if user_update.email:
@@ -146,7 +146,7 @@ class UserService:
                 )
         else:
             updated_user_orm = user_orm
-        return UserResponse.model_validate(updated_user_orm)
+        return UserResponseAdmin.model_validate(updated_user_orm)
 
     @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
     async def delete_user(self, *, user_id: int, perm: bool = False) -> None:
