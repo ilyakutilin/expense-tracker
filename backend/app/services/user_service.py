@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.core import exceptions as exc
+from app.core.auth.security import get_password_hash
 from app.core.cache import cached, invalidate_cache
 from app.crud import CRUDUser, user_crud
 from app.filters.user import UserFilterParams
@@ -96,6 +97,8 @@ class UserService:
     async def create_user(self, *, user_create: UserCreate) -> UserResponse:
         await self._check_email_exists(user_create.email)
         user_data: dict[str, Any] = user_create.model_dump()
+        hashed_password = get_password_hash(str(user_create.password))
+        user_data["password_hash"] = hashed_password
         user_id: int = await self.crud.create(self.db, obj_data=user_data, commit=True)
         user_orm: UserORM | None = await self.crud.get_by_id(
             self.db, obj_id=user_id, include_deleted=False
@@ -115,6 +118,12 @@ class UserService:
 
         if user_update.email:
             await self._check_email_exists(user_update.email)
+
+        user_data: dict[str, Any] = user_update.model_dump(exclude_unset=True)
+
+        if user_update.password:
+            hashed_password = get_password_hash(str(user_update.password))
+            user_data["password_hash"] = hashed_password
 
         user_data: dict[str, Any] = user_update.model_dump(exclude_unset=True)
         if not user_data:

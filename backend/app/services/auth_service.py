@@ -51,7 +51,7 @@ class AuthService:
 
         user_data: dict[str, Any] = user_register.model_dump()
         hashed_password = get_password_hash(str(user_register.password))
-        user_data["hashed_password"] = hashed_password
+        user_data["password_hash"] = hashed_password
         user_data["role"] = UserRole.USER.value
         user_id: int = await self.crud.create(self.db, obj_data=user_data, commit=True)
 
