@@ -12,7 +12,7 @@ from app.core.auth.security import (
     verify_password,
 )
 from app.core.cache import cached
-from app.models.user import UserORM
+from app.models.user import UserORM, UserRole
 from app.schemas.auth import Token, UserRegister
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.user import UserResponse
@@ -49,9 +49,10 @@ class AuthService:
     async def register_user(self, user_register: UserRegister) -> UserResponse:
         await self._check_user_exists(email=user_register.email)
 
-        hashed_password = get_password_hash(str(user_register.password))
-        user_register.password_hash = hashed_password
         user_data: dict[str, Any] = user_register.model_dump()
+        hashed_password = get_password_hash(str(user_register.password))
+        user_data["hashed_password"] = hashed_password
+        user_data["role"] = UserRole.USER.value
         user_id: int = await self.crud.create(self.db, obj_data=user_data, commit=True)
 
         user_orm: UserORM | None = await self.crud.get_by_id(
