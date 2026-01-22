@@ -32,33 +32,13 @@ def setup_exception_handlers(app: FastAPI):
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
     ):
-        errors = []
-        messages = []
-        for error in exc.errors():
-            field = (
-                ".".join(str(loc) for loc in error["loc"]) if error["loc"] else "model"
-            )
-            errors.append(
-                {
-                    "field": field,
-                    "message": error["msg"],
-                    "type": error["type"],
-                }
-            )
-            field = field if not error["loc"] else error["loc"][-1]
-            messages.append(f"{field}: {error['msg']}")
-
-        msg = f"Validation failed. {'; '.join(messages)}"
-        code = "ValidationError"
-        logger.debug(f"{code}. {msg}")
-
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "error": {
-                    "code": code,
-                    "message": msg,
-                    "detail": errors,
+                    "code": "ValidationError",
+                    "message": "Validation failed.",
+                    "detail": exc.errors(),
                     "path": request.url.path,
                 }
             },
