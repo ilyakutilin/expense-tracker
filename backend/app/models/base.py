@@ -82,6 +82,6 @@ class BaseORM(AsyncAttrs, DeclarativeBase):
 class UserOwnedBaseORM(BaseORM):
     __abstract__ = True
 
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("user.id", ondelete="SET NULL"), index=True
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", ondelete="RESTRICT"), index=True
     )

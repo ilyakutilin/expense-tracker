@@ -40,7 +40,7 @@ class TransactionORM(UserOwnedBaseORM):
         back_populates="transactions",
     )
 
-    user: Mapped["UserORM | None"] = relationship(
+    user: Mapped["UserORM"] = relationship(
         "UserORM",
         back_populates="transactions",
     )
