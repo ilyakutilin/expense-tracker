@@ -1,7 +1,7 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth.dependency import require_user
+from app.core.auth.dependency import require_admin, require_user
 from app.core.db import get_db_session
 from app.schemas.auth import UserDep
 from app.services import (
@@ -10,6 +10,7 @@ from app.services import (
     CurrencyService,
     TagService,
     TransactionService,
+    UserService,
 )
 
 
@@ -58,3 +59,13 @@ def get_auth_service(db: AsyncSession = Depends(get_db_session)) -> AuthService:
     Auth service dependency.
     """
     return AuthService(db)
+
+
+def get_user_service(
+    db: AsyncSession = Depends(get_db_session),
+    user: UserDep = Depends(require_admin),
+) -> UserService:
+    """
+    User service dependency.
+    """
+    return UserService(db)
