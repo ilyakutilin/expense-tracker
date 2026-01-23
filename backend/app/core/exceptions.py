@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import status
 
@@ -13,13 +13,12 @@ class AppException(Exception):
         message: str = "Internal server error",
         detail: Any = None,
         headers: dict[str, str] | None = None,
-        error_code: Optional[str] = None,
     ):
         self.status_code = status_code
         self.message = message
         self.detail = detail
         self.headers = headers
-        self.error_code = error_code
+        self.error_code = self.__class__.__name__
         super().__init__(self.message)
 
 
@@ -80,13 +79,17 @@ class ReferentialIntergrityError(AppException):
         )
 
 
-# class ValidationError(AppException):
-#     def __init__(self, message: str = "Validation error", detail: Any = None):
-#         super().__init__(
-#             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-#             message=message,
-#             detail=detail,
-#         )
+class InternalValidationError(AppException):
+    def __init__(
+        self,
+        message: str = "Validation error for the content stored in the DB or cache",
+        detail: Any = None,
+    ):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message=message,
+            detail=detail,
+        )
 
 
 # Business logic exceptions
