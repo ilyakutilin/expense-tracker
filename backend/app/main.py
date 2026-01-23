@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 from app.api.errors import setup_exception_handlers
-from app.api.middleware import logging_middleware
+from app.api.middleware import LoggingMiddleware, RequestIDMiddleware
 from app.api.routers import main_router
 from app.core.cache import cache
 from app.core.logger import setup_logging
@@ -35,7 +35,9 @@ def create_application() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.middleware("http")(logging_middleware)
+    # app.add_middleware(I18nMiddleware)
+    app.add_middleware(LoggingMiddleware)
+    app.add_middleware(RequestIDMiddleware)
 
     app.add_middleware(
         CORSMiddleware,

@@ -36,6 +36,28 @@ class InterceptHandler(logging.Handler):
         )
 
 
+def formatter(record):
+    request_id = record["extra"].get("request_id", None)
+    request_id_part = (
+        "<cyan>{request_id}</cyan> | ".format(request_id=request_id)
+        if request_id is not None
+        else ""
+    )
+    message = record["message"].replace("{", "{{").replace("}", "}}")
+
+    return (
+        "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+        "<level>{level: <8}</level> | "
+        "{request_id_part}"
+        "{message}\n"
+    ).format(
+        time=record["time"],
+        level=record["level"].name,
+        request_id_part=request_id_part,
+        message=message,
+    )
+
+
 def setup_logging():
     """Configure loguru logger with console and file outputs"""
 
@@ -45,11 +67,7 @@ def setup_logging():
     logger.add(
         sys.stdout,
         colorize=True,
-        format=(
-            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | "
-            # "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-            "<level>{message}</level>"
-        ),
+        format=formatter,
         level=settings.log_settings.STREAM_LEVEL,
     )
 
@@ -58,10 +76,8 @@ def setup_logging():
         rotation=f"{settings.log_settings.FILE_ROTATION_MB} MB",
         retention=f"{settings.log_settings.FILE_RETENTION_DAYS} days",
         compression="zip",
-        format=(
-            # "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
-            "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
-        ),
+        format=formatter,
+        serialize=True,
         level=settings.log_settings.FILE_LEVEL,
         # enqueue=True,
     )
@@ -71,10 +87,7 @@ def setup_logging():
         rotation=f"{settings.log_settings.FILE_ROTATION_MB} MB",
         retention=f"{settings.log_settings.FILE_RETENTION_DAYS * 3} days",
         compression="zip",
-        format=(
-            # "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"
-            "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}"
-        ),
+        format=formatter,
         level="ERROR",
         # enqueue=True,
     )
