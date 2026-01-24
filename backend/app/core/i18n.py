@@ -1,12 +1,13 @@
 import gettext
 from contextvars import ContextVar
-from pathlib import Path
+
+from app.core.settings import APP_DIR
 
 # Context variable to store current locale per request
 current_locale: ContextVar[str] = ContextVar("current_locale", default="en")
 
 # Path to translations
-LOCALES_DIR = Path(__file__).parent / "locales"
+LOCALES_DIR = APP_DIR / "locales"
 
 # Cache for translation objects
 _translations = {}
@@ -30,22 +31,17 @@ def get_translation(locale: str):
     return _translations[locale]
 
 
-def _(message: str, **kwargs) -> str:
+def _(message: str) -> str:
     """
-    Translate a message in the current locale with placeholder support.
+    Translate a message in the current locale.
 
     Usage:
-        _("User with email {email} already exists", email="user@example.com")
+        _("User with email {email} already exists")
     """
     locale = current_locale.get()
     translation = get_translation(locale)
-    translated = translation.gettext(message)
 
-    # Handle placeholders
-    if kwargs:
-        translated = translated.format(**kwargs)
-
-    return translated
+    return translation.gettext(message)
 
 
 def set_locale(locale: str):
