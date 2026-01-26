@@ -1,13 +1,13 @@
 import gettext
+import struct
 from contextvars import ContextVar
 
-from app.core.settings import APP_DIR
+from app.core.paths import APP_DIR
+
+LOCALES_DIR = APP_DIR / "locales"
 
 # Context variable to store current locale per request
 current_locale: ContextVar[str] = ContextVar("current_locale", default="en")
-
-# Path to translations
-LOCALES_DIR = APP_DIR / "locales"
 
 # Cache for translation objects
 _translations = {}
@@ -24,7 +24,7 @@ def get_translation(locale: str):
                 fallback=True,
             )
             _translations[locale] = translation
-        except FileNotFoundError:
+        except (FileNotFoundError, OSError, struct.error):
             # Fallback to English if translation not found
             _translations[locale] = gettext.NullTranslations()
 

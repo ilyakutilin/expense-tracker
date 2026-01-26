@@ -1,16 +1,12 @@
 import pathlib
 from pathlib import Path
 
+from core.paths import BACKEND_DIR, PROJECT_DIR
 from dotenv import find_dotenv
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.utils.fs import ensure_dir
-
-APP_DIR = Path(__file__).resolve().parent.parent
-BACKEND_DIR = APP_DIR.parent
-PROJECT_DIR = BACKEND_DIR.parent
-
 
 if Path.exists(BACKEND_DIR / ".env"):
     ENV_FILE = BACKEND_DIR / ".env"
