@@ -13,3 +13,10 @@ __all__ = [
     "AuthService",
     "UserService",
 ]
+
+
+def get_msg(message_key: str, **format_kwargs) -> str:
+    try:
+        return message_key.format(**format_kwargs)
+    except KeyError:
+        return message_key

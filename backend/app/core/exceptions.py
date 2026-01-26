@@ -3,6 +3,8 @@ from typing import Any
 
 from fastapi import status
 
+from app.core.i18n import _
+
 
 class AppException(Exception):
     """Base exception for the application"""
@@ -26,14 +28,14 @@ class AppException(Exception):
 
 
 class NotFoundError(AppException):
-    def __init__(self, message: str = "Resource not found", detail: Any = None):
+    def __init__(self, message: str = _("Resource not found"), detail: Any = None):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND, message=message, detail=detail
         )
 
 
 class BadRequestError(AppException):
-    def __init__(self, message: str = "Bad request", detail: Any = None):
+    def __init__(self, message: str = _("Bad request"), detail: Any = None):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST, message=message, detail=detail
         )
@@ -42,7 +44,7 @@ class BadRequestError(AppException):
 class UnauthorizedError(AppException):
     def __init__(
         self,
-        message: str = "Unauthorized",
+        message: str = _("Unauthorized"),
         detail: Any = None,
         headers: dict[str, str] = {"WWW-Authenticate": "Bearer"},
     ):
@@ -55,14 +57,14 @@ class UnauthorizedError(AppException):
 
 
 class ForbiddenError(AppException):
-    def __init__(self, message: str = "Forbidden", detail: Any = None):
+    def __init__(self, message: str = _("Forbidden"), detail: Any = None):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN, message=message, detail=detail
         )
 
 
 class ConflictError(AppException):
-    def __init__(self, message: str = "Conflict", detail: Any = None):
+    def __init__(self, message: str = _("Conflict"), detail: Any = None):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT, message=message, detail=detail
         )
@@ -70,48 +72,13 @@ class ConflictError(AppException):
 
 class ReferentialIntergrityError(AppException):
     def __init__(
-        self, message: str = "Referential integrity violation", detail: Any = None
+        self, message: str = _("Referential integrity violation"), detail: Any = None
     ):
         super().__init__(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             message=message,
             detail=detail,
         )
-
-
-class InternalValidationError(AppException):
-    def __init__(
-        self,
-        message: str = "Validation error for the content stored in the DB or cache",
-        detail: Any = None,
-    ):
-        super().__init__(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message=message,
-            detail=detail,
-        )
-
-
-# Business logic exceptions
-
-# class BusinessRuleError(AppException):
-#     def __init__(self, message: str = "Business rule violation", detail: Any = None):
-#         super().__init__(
-#             status_code=status.HTTP_400_BAD_REQUEST, message=message, detail=detail
-#         )
-
-
-# External service exceptions
-
-# class ExternalServiceError(AppException):
-#     def __init__(
-#         self, service: str, message: str = "External service error", detail: Any = None
-#     ):
-#         super().__init__(
-#             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-#             message=f"{service}: {message}",
-#             detail=detail,
-#         )
 
 
 # Database exceptions

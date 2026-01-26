@@ -8,12 +8,14 @@ from sqlalchemy.ext.asyncio import (
 from app.core import exceptions as exc
 from app.core.auth.security import get_password_hash
 from app.core.cache import cached, invalidate_cache
+from app.core.i18n import _
 from app.crud import CRUDUser, user_crud
 from app.filters.user import UserFilterParams
 from app.models.user import UserORM
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import UserCreate, UserResponseAdmin, UserUpdate
+from app.services import get_msg
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.USER,
@@ -43,7 +45,7 @@ class UserService:
         )
         if not user_orm:
             raise exc.NotFoundError(
-                message=f"User with id {user_id} not found",
+                message=get_msg(_("User with id {user_id} not found"), user_id=user_id),
                 detail={"id": user_id},
             )
         return user_orm
@@ -52,7 +54,9 @@ class UserService:
         exists: bool = await self.crud.exists(self.db, email=email)
         if exists:
             raise exc.ConflictError(
-                message=f"User with email '{email}' already exists",
+                message=get_msg(
+                    _("User with email '{email}' already exists"), email=email
+                ),
                 detail={"email": email},
             )
 
@@ -105,7 +109,7 @@ class UserService:
         )
         if not user_orm:
             raise exc.DatabaseError(
-                message=("Created user could not be fetched from the database"),
+                message=(_("Created user could not be fetched from the database")),
                 detail={"id": user_id, "email": user_create.email},
             )
         return UserResponseAdmin.model_validate(user_orm)
@@ -128,7 +132,7 @@ class UserService:
         user_data: dict[str, Any] = user_update.model_dump(exclude_unset=True)
         if not user_data:
             raise exc.BadRequestError(
-                message="No fields to update", detail={"id": user_id}
+                message=_("No fields to update"), detail={"id": user_id}
             )
 
         updated_user_id: int | None = await self.crud.update(
@@ -141,7 +145,7 @@ class UserService:
             )
             if not updated_user_orm:
                 raise exc.DatabaseError(
-                    message=("Updated user could not be fetched from the database"),
+                    message=(_("Updated user could not be fetched from the database")),
                     detail={"id": user_id},
                 )
         else:

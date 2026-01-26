@@ -8,11 +8,13 @@ from sqlalchemy.ext.asyncio import (
 from app import crud
 from app.core import exceptions as exc
 from app.core.cache import cached, invalidate_cache
+from app.core.i18n import _
 from app.filters.currency import CurrencyFilterParams
 from app.models.currency import CurrencyORM
 from app.schemas import currency as schemas
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
+from app.services import get_msg
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.CURRENCY,
@@ -44,7 +46,10 @@ class CurrencyService:
         )
         if not currency:
             raise exc.NotFoundError(
-                message=f"Currency with id {currency_id} not found",
+                message=get_msg(
+                    _("Currency with id {currency_id} not found"),
+                    currency_id=currency_id,
+                ),
                 detail={"id": currency_id, "user_id": self.user_id},
             )
         return currency
@@ -55,7 +60,9 @@ class CurrencyService:
         )
         if currency:
             raise exc.ConflictError(
-                message=f"Currency with code '{code}' already exists",
+                message=get_msg(
+                    _("Currency with code '{code}' already exists"), code=code
+                ),
                 detail={"code": code, "user_id": self.user_id},
             )
 
@@ -74,7 +81,7 @@ class CurrencyService:
         )
         if not currency_orm:
             raise exc.DatabaseError(
-                message=("Created currency could not be fetched from the database"),
+                message=(_("Created currency could not be fetched from the database")),
                 detail={
                     "id": currency_id,
                     "code": currency_create.code,
@@ -95,7 +102,7 @@ class CurrencyService:
         currency_data: dict[str, Any] = currency_update.model_dump(exclude_unset=True)
         if not currency_data:
             raise exc.BadRequestError(
-                message="No fields to update", detail={"id": currency_id}
+                message=_("No fields to update"), detail={"id": currency_id}
             )
 
         updated_currency_id: int | None = await self.crud.update(
@@ -108,7 +115,9 @@ class CurrencyService:
             )
             if not updated_currency_orm:
                 raise exc.DatabaseError(
-                    message=("Updated currency could not be fetched from the database"),
+                    message=(
+                        _("Updated currency could not be fetched from the database")
+                    ),
                     detail={"id": currency_id, "user_id": self.user_id},
                 )
         else:

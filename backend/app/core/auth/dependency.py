@@ -10,6 +10,7 @@ from app.core.auth.security import decode_access_token
 from app.core.cache import cached
 from app.core.db import get_db_session
 from app.core.exceptions import ForbiddenError, UnauthorizedError
+from app.core.i18n import _
 from app.models.user import UserORM, UserRole
 from app.schemas.auth import UserDep
 from app.schemas.cache import CachePattern, Entity
@@ -53,7 +54,7 @@ async def get_current_user(
         UnauthorizedError: If token is invalid or expired or user not found
     """
     credentials_exception = UnauthorizedError(
-        message="Could not validate credentials",
+        message=_("Could not validate credentials"),
     )
 
     # Decode token
@@ -89,7 +90,7 @@ def require_roles(allowed_roles: list[UserRole]) -> Callable:
     def role_checker(current_user: UserDep = Depends(get_current_user)) -> UserDep:
         if current_user.role not in allowed_roles:
             raise ForbiddenError(
-                message="Insufficient permissions",
+                message=_("Insufficient permissions"),
                 detail={
                     "user_id": current_user.id_,
                     "user_role": current_user.role.value,

@@ -262,7 +262,7 @@ def setup_exception_handlers(app: FastAPI):
 
         error_detail = {
             "code": error_code,
-            "message": "Validation failed for one or several fields.",
+            "message": _("Validation failed for one or several fields."),
             "detail": _parse_validation_error_details(exc.errors()),
             "path": request.url.path,
             "method": request.method,
@@ -278,6 +278,7 @@ def setup_exception_handlers(app: FastAPI):
         )
 
     # Handle Pydantic validation errors
+    @app.exception_handler(ValidationError)
     async def validation_exception_handler(request: Request, exc: ValidationError):
         """Handler for the internal validation errors."""
         request_id = getattr(request.state, "request_id", "unknown")
@@ -298,8 +299,8 @@ def setup_exception_handlers(app: FastAPI):
             content={
                 "error": {
                     "code": "InternalServerError",
-                    "message": "An unexpected error occurred on the server side",
-                    "detail": "Please contact support if this persists",
+                    "message": _("An unexpected error occurred on the server side"),
+                    "detail": _("Please contact support if this persists"),
                     "path": request.url.path,
                     "request_id": request_id,
                 }
@@ -328,8 +329,8 @@ def setup_exception_handlers(app: FastAPI):
             content={
                 "error": {
                     "code": "InternalServerError",
-                    "message": "An unexpected error occurred on the server side",
-                    "detail": "Please contact support if this persists",
+                    "message": _("An unexpected error occurred on the server side"),
+                    "detail": _("Please contact support if this persists"),
                     "path": request.url.path,
                     "request_id": request_id,
                 }
@@ -356,8 +357,8 @@ def setup_exception_handlers(app: FastAPI):
             content={
                 "error": {
                     "code": "InternalServerError",
-                    "message": "An unexpected error occurred on the server side",
-                    "detail": "Please contact support if this persists",
+                    "message": _("An unexpected error occurred on the server side"),
+                    "detail": _("Please contact support if this persists"),
                     "path": request.url.path,
                     "request_id": request_id,
                 }

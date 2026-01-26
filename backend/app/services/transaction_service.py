@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import (
 from app import crud
 from app.core import exceptions as exc
 from app.core.cache import cached, invalidate_cache
+from app.core.i18n import _
 from app.filters.transaction import TransactionFilterParams
 from app.models.transaction import TransactionLineORM, TransactionORM
 from app.schemas.cache import CachePattern, Entity
@@ -23,6 +24,7 @@ from app.schemas.transaction import (
     TransactionType,
     TransactionUpdate,
 )
+from app.services import get_msg
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.TRANSACTION,
@@ -72,7 +74,7 @@ class TransactionService:
         if detail:
             detail["user_id"] = self.user_id
             raise exc.ReferentialIntergrityError(
-                message=(
+                message=_(
                     "Referential integrity violation: no record(s) "
                     "by the specified id(s)"
                 ),
@@ -90,7 +92,10 @@ class TransactionService:
         )
         if not transaction_orm:
             raise exc.NotFoundError(
-                message=f"Transaction with id {transaction_id} not found",
+                message=get_msg(
+                    _("Transaction with id {transaction_id} not found"),
+                    transaction_id=transaction_id,
+                ),
                 detail={
                     "id": transaction_id,
                     "user_id": self.user_id,
@@ -165,7 +170,7 @@ class TransactionService:
             failed = set(tc.tag_ids) - set(inserted_tag_ids)
             if failed:
                 raise exc.DatabaseError(
-                    message="Failed to add some tags to the transaction",
+                    message=_("Failed to add some tags to the transaction"),
                     detail={
                         "failed_ids": list(failed).sort(),
                     },
@@ -178,7 +183,9 @@ class TransactionService:
         )
         if not transaction_orm:
             raise exc.DatabaseError(
-                message=("Created transaction could not be fetched from the database"),
+                message=(
+                    _("Created transaction could not be fetched from the database")
+                ),
                 detail={"id": transaction_id, "user_id": self.user_id},
             )
 
@@ -239,7 +246,7 @@ class TransactionService:
             updated_line_ids = {line.id_ for line in tu.lines}
             if not updated_line_ids.issubset(existing_line_ids):
                 raise exc.ReferentialIntergrityError(
-                    message="Transaction line IDs do not match the transaction",
+                    message=_("Transaction line IDs do not match the transaction"),
                     detail={
                         "transaction_id": t_orm.id_,
                         "existing_line_ids": list(existing_line_ids).sort(),
