@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import status
 
-from app.core.i18n import _, translate
+from app.core.i18n import TranslatableMessage, _, translate
 
 
 class AppException(Exception):
@@ -12,13 +12,15 @@ class AppException(Exception):
     def __init__(
         self,
         status_code: int = 500,
-        message: str = _("Internal server error"),
+        translatable_message: TranslatableMessage | None = None,
+        fallback_message: str | None = None,
         detail: Any = None,
         headers: dict[str, str] | None = None,
-        **msg_kwargs,
     ):
         self.status_code = status_code
-        self.message = translate(message, **msg_kwargs)
+        self.message = fallback_message or "Internal Server Error"
+        if translatable_message is not None and translatable_message.is_valid():
+            self.message = translate(translatable_message)
         self.detail = detail
         self.headers = headers
         self.error_code = self.__class__.__name__
@@ -32,92 +34,100 @@ class AppException(Exception):
 class NotFoundError(AppException):
     def __init__(
         self,
-        message: str = _("Resource not found"),
+        translatable_message: TranslatableMessage = _("Resource not found"),
         detail: Any = None,
         **msg_kwargs,
     ):
+        translatable_message.kwargs = msg_kwargs
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
-            message=message,
+            translatable_message=translatable_message,
+            fallback_message="Resource not found",
             detail=detail,
-            **msg_kwargs,
         )
 
 
 class BadRequestError(AppException):
     def __init__(
         self,
-        message: str = _("Bad request"),
+        translatable_message: TranslatableMessage = _("Bad request"),
         detail: Any = None,
         **msg_kwargs,
     ):
+        translatable_message.kwargs = msg_kwargs
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
-            message=message,
+            translatable_message=translatable_message,
+            fallback_message="Bad request",
             detail=detail,
-            **msg_kwargs,
         )
 
 
 class UnauthorizedError(AppException):
     def __init__(
         self,
-        message: str = _("Unauthorized"),
+        translatable_message: TranslatableMessage = _("Unauthorized"),
         detail: Any = None,
         headers: dict[str, str] = {"WWW-Authenticate": "Bearer"},
         **msg_kwargs,
     ):
+        translatable_message.kwargs = msg_kwargs
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            message=message,
+            translatable_message=translatable_message,
+            fallback_message="Unauthorized",
             detail=detail,
             headers=headers,
-            **msg_kwargs,
         )
 
 
 class ForbiddenError(AppException):
     def __init__(
         self,
-        message: str = _("Forbidden"),
+        translatable_message: TranslatableMessage = _("Forbidden"),
         detail: Any = None,
         **msg_kwargs,
     ):
+        translatable_message.kwargs = msg_kwargs
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
-            message=message,
+            translatable_message=translatable_message,
+            fallback_message="Forbidden",
             detail=detail,
-            **msg_kwargs,
         )
 
 
 class ConflictError(AppException):
     def __init__(
         self,
-        message: str = _("Conflict"),
+        translatable_message: TranslatableMessage = _("Conflict"),
         detail: Any = None,
         **msg_kwargs,
     ):
+        translatable_message.kwargs = msg_kwargs
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
-            message=message,
+            translatable_message=translatable_message,
+            fallback_message="Conflict",
             detail=detail,
-            **msg_kwargs,
         )
 
 
 class ReferentialIntergrityError(AppException):
     def __init__(
         self,
-        message: str = _("Referential integrity violation"),
+        translatable_message: TranslatableMessage = _(
+            "Referential integrity violation"
+        ),
         detail: Any = None,
         **msg_kwargs,
     ):
+        translatable_message.kwargs = msg_kwargs
         super().__init__(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            message=message,
+            translatable_message=translatable_message,
+            fallback_message="Referential integrity violation",
             detail=detail,
-            **msg_kwargs,
         )
 
 
@@ -128,7 +138,7 @@ class DatabaseError(AppException):
     def __init__(self, message: str = "Database error", detail: Any = None):
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message=message,
+            fallback_message=message,
             detail=detail,
         )
 
