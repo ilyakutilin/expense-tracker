@@ -297,8 +297,8 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
             is_template: bool,
             from_acc_key: str,
             from_amount: float,
-            to_acc_key: str,
-            to_amount: float,
+            to_acc_key: str | None,
+            to_amount: float | None,
             deleted: bool,
         ) -> None:
             self.type_ = type_
@@ -340,10 +340,11 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
     transaction_data: list[TransactionData] = [
         # type, date_offset, comment, is_template, from_acc_key, from_amount, to_acc_key, to_amount, deleted
         # debit, cash, savings, dollars, groceries, fun, clothes, salary, blocked
+        TD(TT.CORRECTION, 0, "Изначальная сумма на счёте", False, "debit", 15655.85, None, None, False),
         TD(TT.INCOME, 1, "Подсчёт", False, "salary", -197899.23, "debit", 197899.23, False),
         TD(TT.TRANSFER, 1, "Перевод на вклад", False, "debit", -50000, "savings", 50000, False),
         TD(TT.EXCHANGE, 1, "Обмен валюты", False, "debit", -27212.39, "dollars", 350, False),
-        # TD(TT.EXPENSE, 1, "Продукты в Пятёрочке", True, "debit", 0, "groceries", 0, False),
+        TD(TT.EXPENSE, 1, "Продукты в Пятёрочке", True, "debit", 0, "groceries", 0, False),
         TD(TT.EXPENSE, 2, "Продукты в Пятёрочке", False, "debit", -2752.11, "groceries", 2752.11, False),
         TD(TT.TRANSFER, 2, "Снятие налички", False, "debit", -30000, "cash", 30000, False),
         TD(TT.EXPENSE, 2, "Катание на санях", False, "cash", -4000, "fun", 4000, False),
@@ -352,7 +353,8 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
         TD(TT.EXPENSE, 4, "Покупка одежды на рынке", False, "cash", -10000, "clothes", 10000, False),
         TD(TT.EXPENSE, 6, "Поход в ресторан", False, "debit", -12400, "fun", 12400, False),
         TD(TT.EXPENSE, 7, "Продукты в Пятёрочке", False, "debit", -1985.54, "groceries", 1985.54, False),
-        TD(TT.EXPENSE, 8, "Продукты в Пятёрочке", False, "debit", -780.40, "groceries", 780.40, False),
+        TD(TT.EXPENSE, 8, "Продукты в Пятёрочке", False, "debit", -1780.40, "groceries", 1780.40, False),
+        TD(TT.REFUND, 8, "Возврат за гнилую рыбу", False, "debit", 950.15, "groceries", -950.15, False),
         TD(TT.EXPENSE, 10, "Продукты в Пятёрочке", False, "debit", -1059.87, "groceries", 1059.87, False),
         TD(TT.EXPENSE, 10, "Экскурсия в Ярославль", False, "debit", -45900, "fun", 45900, False),
         TD(TT.INCOME, 15, "Аванс", False, "salary", -48750.37, "debit", 48750.37, False),
@@ -377,16 +379,19 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
             deleted_at=td.deleted_at,
         )
 
-        transaction_orm.lines.extend(
-            [
+        transaction_orm.lines.append(
                 TransactionLineORM(
-                    account=accounts[td.from_acc_key],
-                    amount=Decimal(td.from_amount),
-                    created_at=td.created_at,
-                    updated_at=td.updated_at,
-                    is_deleted=td.deleted,
-                    deleted_at=td.deleted_at,
-                ),
+                account=accounts[td.from_acc_key],
+                amount=Decimal(td.from_amount),
+                created_at=td.created_at,
+                updated_at=td.updated_at,
+                is_deleted=td.deleted,
+                deleted_at=td.deleted_at,
+            )
+        )
+
+        if td.to_acc_key is not None and td.to_amount is not None:
+            transaction_orm.lines.append(
                 TransactionLineORM(
                     account=accounts[td.to_acc_key],
                     amount=Decimal(td.to_amount),
@@ -394,9 +399,8 @@ def _get_transaction_orms(user: UserORM, accounts: dict[str, AccountORM], tags: 
                     updated_at=td.updated_at,
                     is_deleted=td.deleted,
                     deleted_at=td.deleted_at,
-                ),
-            ]
-        )
+                )
+            )
 
         if random.random() < 0.6:
             transaction_tags = random.sample(tags, random.randint(1, len(tags)))
