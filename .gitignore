@@ -286,4 +286,4 @@ Temporary Items
 .nfs*
 
 # Translations
-locales/**/*.mo
+*.mo
