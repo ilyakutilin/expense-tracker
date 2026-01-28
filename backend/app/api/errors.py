@@ -294,18 +294,7 @@ def setup_exception_handlers(app: FastAPI):
             },
         )
 
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": {
-                    "code": "InternalServerError",
-                    "message": _("An unexpected error occurred on the server side"),
-                    "detail": _("Please contact support if this persists"),
-                    "path": request.url.path,
-                    "request_id": request_id,
-                }
-            },
-        )
+        return _get_500_response(request.url.path, request_id)
 
     # Handle SQLAlchemy errors
     @app.exception_handler(SQLAlchemyError)
@@ -324,18 +313,7 @@ def setup_exception_handlers(app: FastAPI):
             },
         )
 
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": {
-                    "code": "InternalServerError",
-                    "message": _("An unexpected error occurred on the server side"),
-                    "detail": _("Please contact support if this persists"),
-                    "path": request.url.path,
-                    "request_id": request_id,
-                }
-            },
-        )
+        return _get_500_response(request.url.path, request_id)
 
     # Handle all other exceptions (catch-all)
     @app.exception_handler(Exception)
@@ -352,15 +330,4 @@ def setup_exception_handlers(app: FastAPI):
             },
         )
 
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": {
-                    "code": "InternalServerError",
-                    "message": _("An unexpected error occurred on the server side"),
-                    "detail": _("Please contact support if this persists"),
-                    "path": request.url.path,
-                    "request_id": request_id,
-                }
-            },
-        )
+        return _get_500_response(request.url.path, request_id)
