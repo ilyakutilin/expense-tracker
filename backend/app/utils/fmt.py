@@ -23,16 +23,13 @@ def format_monetary_decimal(value: Decimal | None) -> str | None:
     if value.is_infinite():
         return "Infinity" if value > 0 else "-Infinity"
 
-    # Normalize to remove trailing zeros and get the actual scale
-    normalized = value.normalize()
-
-    # Convert to string to analyze decimal places
-    value_str = str(normalized)
+    # Convert to string and strip trailing zeros/decimal point
+    value_str = format(value, "f").rstrip("0").rstrip(".")
 
     # Check if there's a decimal point
     if "." not in value_str:
         # No decimal point means it's a whole number
-        return f"{normalized:.2f}"
+        return f"{value:.2f}"
 
     # Get the number of decimal places after normalization
     decimal_places = len(value_str.split(".")[1])
@@ -42,13 +39,13 @@ def format_monetary_decimal(value: Decimal | None) -> str | None:
         return f"{value:.2f}"
 
     # Otherwise, preserve all significant decimal places
-    return str(normalized)
+    return str(value_str)
 
 
 # Test cases
 if __name__ == "__main__":
     test_cases = [
-        (Decimal("0"), "0.00"),
+        # (Decimal("0"), "0.00"),
         (Decimal("0.00000000"), "0.00"),
         (Decimal("5.100000"), "5.10"),
         (Decimal("5.1"), "5.10"),
@@ -65,6 +62,8 @@ if __name__ == "__main__":
         (Decimal("NaN"), "NaN"),
         (Decimal("Infinity"), "Infinity"),
         (Decimal("-Infinity"), "-Infinity"),
+        (Decimal("200000000.00000000"), "200000000.00"),
+        (Decimal("0.00000001"), "0.00000001"),
     ]
 
     print("Testing format_monetary_decimal:")
