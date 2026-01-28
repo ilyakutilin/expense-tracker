@@ -152,8 +152,8 @@ class TransactionLineBase(BaseModel):
 
 
 class TransactionLineCreate(TransactionLineBase):
-    id_: PositiveInt | None = Field(None, validation_alias="id")
-    transaction_id: PositiveInt | None = None
+    id_: PositiveInt | None = Field(None, validation_alias="id", exclude=True)
+    transaction_id: PositiveInt | None = Field(None, exclude=True)
     account_id: PositiveInt
     amount: Decimal
 
