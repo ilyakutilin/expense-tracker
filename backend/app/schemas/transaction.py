@@ -190,11 +190,17 @@ class TransactionValidatorMixin:
 
 class TransactionCreate(TransactionValidatorMixin, BaseModel):
     type_: TransactionType = Field(..., validation_alias="type")
-    date: dt.date = dt.date.today()
+    date: dt.date | None = None
     comment: StrippedStr | None = Field(None, min_length=1, max_length=1000)
     is_template: bool = False
     lines: list[TransactionLineCreate] = Field(..., exclude=True)
     tag_ids: list[PositiveInt] = Field([], exclude=True)
+
+    @model_validator(mode="after")
+    def validate_null_date(self) -> Self:
+        if self.date is None and self.is_template is False:
+            self.date = dt.date.today()
+        return self
 
     @model_validator(mode="after")
     def validate_lines(self) -> Self:
@@ -251,10 +257,7 @@ class TransactionLineResponse(BaseModel):
 class TransactionResponse(BaseModel):
     id_: int = Field(..., serialization_alias="id")
     type_: TransactionType = Field(..., serialization_alias="type")
-    lines: list[TransactionLineResponse] | None = Field(None, exclude=True)
-    from_: TransactionLineResponse | None = Field(None, serialization_alias="from")
-    to: TransactionLineResponse | None = None
-    date: dt.date
+    date: dt.date | None
     comment: str | None
     is_template: bool
     tags: list[TagResponseBase]
