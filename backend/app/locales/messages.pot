@@ -1,0 +1,665 @@
+# Translations template for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-01-28 08:47+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.3\n"
+
+#: app/api/errors.py:15
+msgid "Arguments must be a tuple, list or a dictionary"
+msgstr ""
+
+#: app/api/errors.py:16
+msgid "Assertion failed, {error}"
+msgstr ""
+
+#: app/api/errors.py:17
+msgid "Input should be a valid boolean, unable to interpret input"
+msgstr ""
+
+#: app/api/errors.py:18
+msgid "Input should be a valid boolean"
+msgstr ""
+
+#: app/api/errors.py:19
+msgid "Data should be valid {encoding}: {encoding_error}"
+msgstr ""
+
+#: app/api/errors.py:20
+msgid "Data should have at most {max_length} byte"
+msgid_plural "Data should have at most {max_length} bytes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:25
+msgid "Data should have at least {min_length} byte"
+msgid_plural "Data should have at least {min_length} bytes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:30
+msgid "Input should be a valid bytes"
+msgstr ""
+
+#: app/api/errors.py:31
+msgid "Input should be callable"
+msgstr ""
+
+#: app/api/errors.py:32
+msgid ""
+"Input should be a valid complex string following the rules at "
+"https://docs.python.org/3/library/functions.html#complex"
+msgstr ""
+
+#: app/api/errors.py:35
+msgid ""
+"Input should be a valid python complex object, a number, or a valid "
+"complex string following the rules at "
+"https://docs.python.org/3/library/functions.html#complex"
+msgstr ""
+
+#: app/api/errors.py:38
+msgid "Input should be an instance of {class_name}"
+msgstr ""
+
+#: app/api/errors.py:39
+msgid "Input should be a dictionary or an instance of {class_name}"
+msgstr ""
+
+#: app/api/errors.py:40
+msgid "Datetimes provided to dates should have zero time - e.g. be exact dates"
+msgstr ""
+
+#: app/api/errors.py:43
+msgid "Input should be a valid date or datetime, {error}"
+msgstr ""
+
+#: app/api/errors.py:46
+msgid "Date should be in the future"
+msgstr ""
+
+#: app/api/errors.py:47
+msgid "Input should be a valid date in the format YYYY-MM-DD, {error}"
+msgstr ""
+
+#: app/api/errors.py:48
+msgid "Date should be in the past"
+msgstr ""
+
+#: app/api/errors.py:49
+msgid "Input should be a valid date"
+msgstr ""
+
+#: app/api/errors.py:50
+msgid "Input should be a valid datetime or date, {error}"
+msgstr ""
+
+#: app/api/errors.py:53
+msgid "Input should be in the future"
+msgstr ""
+
+#: app/api/errors.py:54
+msgid "Invalid datetime object, got {error}"
+msgstr ""
+
+#: app/api/errors.py:55
+msgid "Input should be a valid datetime, {error}"
+msgstr ""
+
+#: app/api/errors.py:56
+msgid "Input should be in the past"
+msgstr ""
+
+#: app/api/errors.py:57
+msgid "Input should be a valid datetime"
+msgstr ""
+
+#: app/api/errors.py:58
+msgid "Decimal input should have no more than {max_digits} digit in total"
+msgid_plural "Decimal input should have no more than {max_digits} digits in total"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:63
+msgid "Decimal input should have no more than {decimal_places} decimal place"
+msgid_plural "Decimal input should have no more than {decimal_places} decimal places"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:68
+msgid "Input should be a valid decimal"
+msgstr ""
+
+#: app/api/errors.py:69
+msgid "Decimal input should be an integer, float, string or Decimal object"
+msgstr ""
+
+#: app/api/errors.py:72
+msgid ""
+"Decimal input should have no more than {whole_digits} digit before the "
+"decimal point"
+msgid_plural ""
+"Decimal input should have no more than {whole_digits} digits before the "
+"decimal point"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:77
+msgid ""
+"The default factory uses validated data, but at least one validation "
+"error occurred"
+msgstr ""
+
+#: app/api/errors.py:80
+msgid "Input should be a valid dictionary"
+msgstr ""
+
+#: app/api/errors.py:81 app/api/errors.py:114
+msgid "Input should be {expected}"
+msgstr ""
+
+#: app/api/errors.py:82
+msgid "Extra inputs are not permitted"
+msgstr ""
+
+#: app/api/errors.py:83
+msgid "Input should be a finite number"
+msgstr ""
+
+#: app/api/errors.py:84
+msgid "Input should be a valid number, unable to parse string as a number"
+msgstr ""
+
+#: app/api/errors.py:87
+msgid "Input should be a valid number"
+msgstr ""
+
+#: app/api/errors.py:88
+msgid "Field is frozen"
+msgstr ""
+
+#: app/api/errors.py:89
+msgid "Instance is frozen"
+msgstr ""
+
+#: app/api/errors.py:90
+msgid "Input should be a valid frozenset"
+msgstr ""
+
+#: app/api/errors.py:91
+msgid "Error extracting attribute: {error}"
+msgstr ""
+
+#: app/api/errors.py:92
+msgid "Input should be greater than {gt}"
+msgstr ""
+
+#: app/api/errors.py:93
+msgid "Input should be greater than or equal to {ge}"
+msgstr ""
+
+#: app/api/errors.py:94
+msgid "Input should be a valid integer, got a number with a fractional part"
+msgstr ""
+
+#: app/api/errors.py:97
+msgid "Input should be a valid integer, unable to parse string as an integer"
+msgstr ""
+
+#: app/api/errors.py:100
+msgid "Unable to parse input string as an integer, exceeded maximum size"
+msgstr ""
+
+#: app/api/errors.py:103
+msgid "Input should be a valid integer"
+msgstr ""
+
+#: app/api/errors.py:104
+msgid "Keys should be strings"
+msgstr ""
+
+#: app/api/errors.py:105
+msgid "Input should be an instance of {class}"
+msgstr ""
+
+#: app/api/errors.py:106
+msgid "Input should be a subclass of {class}"
+msgstr ""
+
+#: app/api/errors.py:107
+msgid "Input should be iterable"
+msgstr ""
+
+#: app/api/errors.py:108
+msgid "Error iterating over object, error: {error}"
+msgstr ""
+
+#: app/api/errors.py:109
+msgid "Invalid JSON: {error}"
+msgstr ""
+
+#: app/api/errors.py:110
+msgid "JSON input should be string, bytes or bytearray"
+msgstr ""
+
+#: app/api/errors.py:111
+msgid "Input should be less than {lt}"
+msgstr ""
+
+#: app/api/errors.py:112
+msgid "Input should be less than or equal to {le}"
+msgstr ""
+
+#: app/api/errors.py:113
+msgid "Input should be a valid list"
+msgstr ""
+
+#: app/api/errors.py:115
+msgid "Input should be a valid mapping, error: {error}"
+msgstr ""
+
+#: app/api/errors.py:116
+msgid "Field required"
+msgstr ""
+
+#: app/api/errors.py:117
+msgid "Missing required argument"
+msgstr ""
+
+#: app/api/errors.py:118
+msgid "Missing required keyword only argument"
+msgstr ""
+
+#: app/api/errors.py:119
+msgid "Missing required positional only argument"
+msgstr ""
+
+#: app/api/errors.py:120
+msgid "Input should be the 'MISSING' sentinel"
+msgstr ""
+
+#: app/api/errors.py:121
+msgid "Input should be a valid dictionary or object to extract fields from"
+msgstr ""
+
+#: app/api/errors.py:124
+msgid "Input should be a valid dictionary or instance of {class_name}"
+msgstr ""
+
+#: app/api/errors.py:125
+msgid "Got multiple values for argument"
+msgstr ""
+
+#: app/api/errors.py:126
+msgid "Input should be a multiple of {multiple_of}"
+msgstr ""
+
+#: app/api/errors.py:127
+msgid ""
+"Cannot check `{method_name}` when validating from json, use a "
+"JsonOrPython validator instead"
+msgstr ""
+
+#: app/api/errors.py:130
+msgid "Object has no attribute '{attribute}'"
+msgstr ""
+
+#: app/api/errors.py:131
+msgid "Input should be None"
+msgstr ""
+
+#: app/api/errors.py:132
+msgid "Recursion error - cyclic reference detected"
+msgstr ""
+
+#: app/api/errors.py:133
+msgid "Set items should be hashable"
+msgstr ""
+
+#: app/api/errors.py:134
+msgid "Input should be a valid set"
+msgstr ""
+
+#: app/api/errors.py:135
+msgid "String should match pattern '{pattern}'"
+msgstr ""
+
+#: app/api/errors.py:136
+msgid "Input should be a string, not an instance of a subclass of str"
+msgstr ""
+
+#: app/api/errors.py:139
+msgid "String should have at most {max_length} character"
+msgid_plural "String should have at most {max_length} characters"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:144
+msgid "String should have at least {min_length} character"
+msgid_plural "String should have at least {min_length} characters"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:149
+msgid "Input should be a valid string"
+msgstr ""
+
+#: app/api/errors.py:150
+msgid ""
+"Input should be a valid string, unable to parse raw data as a unicode "
+"string"
+msgstr ""
+
+#: app/api/errors.py:153
+msgid "Input should be a valid timedelta, {error}"
+msgstr ""
+
+#: app/api/errors.py:154
+msgid "Input should be a valid timedelta"
+msgstr ""
+
+#: app/api/errors.py:155
+msgid "Input should be in a valid time format, {error}"
+msgstr ""
+
+#: app/api/errors.py:156
+msgid "Input should be a valid time"
+msgstr ""
+
+#: app/api/errors.py:157
+msgid "Input should have timezone info"
+msgstr ""
+
+#: app/api/errors.py:158
+msgid "Input should not have timezone info"
+msgstr ""
+
+#: app/api/errors.py:159
+msgid ""
+"{field_type} should have at most {max_length} item after validation, not "
+"{actual_length}"
+msgid_plural ""
+"{field_type} should have at most {max_length} items after validation, not"
+" {actual_length}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:164
+msgid ""
+"{field_type} should have at least {min_length} item after validation, not"
+" {actual_length}"
+msgid_plural ""
+"{field_type} should have at least {min_length} items after validation, "
+"not {actual_length}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:169
+msgid "Input should be a valid tuple"
+msgstr ""
+
+#: app/api/errors.py:170
+msgid "Unexpected keyword argument"
+msgstr ""
+
+#: app/api/errors.py:171
+msgid "Unexpected positional argument"
+msgstr ""
+
+#: app/api/errors.py:172
+msgid ""
+"Input tag '{tag}' found using {discriminator} does not match any of the "
+"expected tags: {expected_tags}"
+msgstr ""
+
+#: app/api/errors.py:175
+msgid "Unable to extract tag using discriminator {discriminator}"
+msgstr ""
+
+#: app/api/errors.py:178
+msgid "Input should be a valid URL, {error}"
+msgstr ""
+
+#: app/api/errors.py:179
+msgid "URL scheme should be {expected_schemes}"
+msgstr ""
+
+#: app/api/errors.py:180
+msgid "Input violated strict URL syntax rules, {error}"
+msgstr ""
+
+#: app/api/errors.py:181
+msgid "URL should have at most {max_length} character"
+msgid_plural "URL should have at most {max_length} characters"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/api/errors.py:186
+msgid "URL input should be a string or URL"
+msgstr ""
+
+#: app/api/errors.py:187
+msgid "Input should be a valid UUID, {error}"
+msgstr ""
+
+#: app/api/errors.py:188
+msgid "UUID input should be a string, bytes or UUID object"
+msgstr ""
+
+#: app/api/errors.py:189
+msgid "UUID version {expected_version} expected"
+msgstr ""
+
+#: app/api/errors.py:190
+msgid "Value error, {error}"
+msgstr ""
+
+#: app/api/errors.py:268
+msgid "An unexpected error occurred on the server side"
+msgstr ""
+
+#: app/api/errors.py:270
+msgid "Please contact support if this persists"
+msgstr ""
+
+#: app/api/errors.py:314
+msgid "Validation failed for one or several fields."
+msgstr ""
+
+#: app/core/exceptions.py:37
+msgid "Resource not found"
+msgstr ""
+
+#: app/core/exceptions.py:53
+msgid "Bad request"
+msgstr ""
+
+#: app/core/exceptions.py:69
+msgid "Unauthorized"
+msgstr ""
+
+#: app/core/exceptions.py:87
+msgid "Forbidden"
+msgstr ""
+
+#: app/core/exceptions.py:103
+msgid "Conflict"
+msgstr ""
+
+#: app/core/exceptions.py:119
+msgid "Referential integrity violation"
+msgstr ""
+
+#: app/core/auth/dependency.py:57
+msgid "Could not validate credentials"
+msgstr ""
+
+#: app/core/auth/dependency.py:93
+msgid "Insufficient permissions"
+msgstr ""
+
+#: app/schemas/transaction.py:43
+msgid "Account ID and amount cannot be None for the purpose of lines validation"
+msgstr ""
+
+#: app/schemas/transaction.py:52
+msgid ""
+"There should be exacly one transaction line for a transaction of type "
+"'{type}'; got {len_lines}"
+msgid_plural ""
+"There should be exacly one transaction line for a transaction of type "
+"'{type}'; got {len_lines}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/schemas/transaction.py:66
+msgid ""
+"There should be exacly two transaction lines for a transaction of type "
+"'{type}'; got {len_lines}"
+msgid_plural ""
+"There should be exacly two transaction lines for a transaction of type "
+"'{type}'; got {len_lines}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/schemas/transaction.py:82
+msgid "Amounts in transaction lines shall be with opposite signs"
+msgstr ""
+
+#: app/schemas/transaction.py:89
+msgid "Cannot credit the amount to the same account it is debited from"
+msgstr ""
+
+#: app/schemas/transaction.py:107
+msgid "Amount cannot be zero"
+msgstr ""
+
+#: app/schemas/transaction.py:115
+msgid "Failed to validate the scale of the numeric value."
+msgstr ""
+
+#: app/schemas/transaction.py:120
+msgid ""
+"Numeric value has {scale} decimal place, which exceeds the max scale of "
+"{max_scale}."
+msgid_plural ""
+"Numeric value has {scale} decimal places, which exceeds the max scale of "
+"{max_scale}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/schemas/transaction.py:134
+msgid ""
+"Amount value shall be between {max_value_negative} and "
+"{max_value_positive} (not inclusive)"
+msgstr ""
+
+#: app/schemas/transaction.py:177
+msgid "Cannot assign more than 100 tags to a transaction"
+msgstr ""
+
+#: app/schemas/transaction.py:211
+msgid "At least one field must be set"
+msgstr ""
+
+#: app/schemas/transaction.py:222
+msgid "Transaction type shall be set when validating the full lines"
+msgstr ""
+
+#: app/schemas/transaction.py:266
+msgid "Either the 'lines', or 'to' and 'from' fields shall be set"
+msgstr ""
+
+#: app/schemas/transaction.py:278
+msgid "Expected exactly 2 transaction lines, got {len_lines}"
+msgid_plural "Expected exactly 2 transaction lines, got {len_lines}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: app/schemas/transaction.py:288
+msgid "Transaction line amounts cannot be zero"
+msgstr ""
+
+#: app/schemas/transaction.py:295
+msgid ""
+"Expected exactly one negative and one positive amount, got "
+"{len_negative_lines} negative and {len_positive_lines} positive"
+msgstr ""
+
+#: app/services/account_service.py:49
+msgid "Account with id {account_id} not found"
+msgstr ""
+
+#: app/services/account_service.py:66
+msgid "Account with name '{name}' already exists"
+msgstr ""
+
+#: app/services/account_service.py:85
+msgid "Parent account with ID {parent_id} does not exist."
+msgstr ""
+
+#: app/services/account_service.py:92
+msgid "Currency with ID {currency_id} does not exist."
+msgstr ""
+
+#: app/services/account_service.py:113
+msgid "An account cannot be a sub-account of itself"
+msgstr ""
+
+#: app/services/account_service.py:200 app/services/currency_service.py:101
+#: app/services/user_service.py:134
+msgid "No fields to update"
+msgstr ""
+
+#: app/services/auth_service.py:33 app/services/user_service.py:57
+msgid "User with email '{email}' already exists"
+msgstr ""
+
+#: app/services/auth_service.py:46 app/services/user_service.py:47
+msgid "User with id {user_id} not found"
+msgstr ""
+
+#: app/services/auth_service.py:77
+msgid "Incorrect email or password"
+msgstr ""
+
+#: app/services/currency_service.py:48
+msgid "Currency with id {currency_id} not found"
+msgstr ""
+
+#: app/services/currency_service.py:60
+msgid "Currency with code '{code}' already exists"
+msgstr ""
+
+#: app/services/tag_service.py:48
+msgid "Tag with name '{name}' already exists"
+msgstr ""
+
+#: app/services/tag_service.py:67
+msgid "Tag with id {tag_id} not found"
+msgstr ""
+
+#: app/services/transaction_service.py:76
+msgid "Referential integrity violation: no record(s) by the specified id(s)"
+msgstr ""
+
+#: app/services/transaction_service.py:94
+msgid "Transaction with id {transaction_id} not found"
+msgstr ""
+
+#: app/services/transaction_service.py:246
+msgid "Transaction line IDs do not match the transaction"
+msgstr ""
+
