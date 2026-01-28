@@ -1,7 +1,7 @@
 import datetime as dt
 from decimal import Decimal
 from enum import Enum
-from typing import Sequence
+from typing import Self, Sequence
 
 from pydantic import (
     BaseModel,
@@ -11,7 +11,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import Self
 
 from app.core.i18n import _, n_, translate
 from app.core.settings import settings
@@ -74,12 +73,16 @@ def _validate_lines(
             )
             raise ValueError(translated_msg)
 
-        lines.sort(key=lambda x: x.amount)  # type: ignore
-
-        if not (lines[0].amount < 0 and lines[1].amount > 0):  # type: ignore
+        assert lines[0].amount is not None and lines[1].amount is not None
+        if ((lines[0].amount == 0) != (lines[1].amount == 0)) or (
+            (lines[0].amount < 0) != (lines[1].amount > 0)
+        ):
             raise ValueError(
                 translate(
-                    _("Amounts in transaction lines shall be with opposite signs")
+                    _(
+                        "Amounts in transaction lines shall either both be zero "
+                        "or shall both be the non-zero values with opposite signs"
+                    )
                 )
             )
 
@@ -102,9 +105,6 @@ class TransactionLineBase(BaseModel):
     def validate_amount(cls, v: Decimal | None) -> Decimal | None:
         if v is None:
             return None
-
-        if v == 0:
-            raise ValueError(translate(_("Amount cannot be zero")))
 
         exponent = v.as_tuple().exponent
 
@@ -144,8 +144,8 @@ class TransactionLineBase(BaseModel):
 
 
 class TransactionLineCreate(TransactionLineBase):
-    id_: PositiveInt | None = Field(None, validation_alias="id")
-    transaction_id: PositiveInt | None = None
+    id_: PositiveInt | None = Field(None, validation_alias="id", exclude=True)
+    transaction_id: PositiveInt | None = Field(None, exclude=True)
     account_id: PositiveInt
     amount: Decimal
 
@@ -182,11 +182,17 @@ class TransactionValidatorMixin:
 
 class TransactionCreate(TransactionValidatorMixin, BaseModel):
     type_: TransactionType = Field(..., validation_alias="type")
-    date: dt.date = dt.date.today()
+    date: dt.date | None = None
     comment: StrippedStr | None = Field(None, min_length=1, max_length=1000)
     is_template: bool = False
     lines: list[TransactionLineCreate] = Field(..., exclude=True)
     tag_ids: list[PositiveInt] = Field([], exclude=True)
+
+    @model_validator(mode="after")
+    def validate_null_date(self) -> Self:
+        if self.date is None and self.is_template is False:
+            self.date = dt.date.today()
+        return self
 
     @model_validator(mode="after")
     def validate_lines(self) -> Self:
@@ -243,10 +249,8 @@ class TransactionLineResponse(BaseModel):
 class TransactionResponse(BaseModel):
     id_: int = Field(..., serialization_alias="id")
     type_: TransactionType = Field(..., serialization_alias="type")
-    lines: list[TransactionLineResponse] | None = Field(None, exclude=True)
-    from_: TransactionLineResponse | None = Field(None, serialization_alias="from")
-    to: TransactionLineResponse | None = None
-    date: dt.date
+    lines: list[TransactionLineResponse] = Field(..., min_length=1, max_length=2)
+    date: dt.date | None
     comment: str | None
     is_template: bool
     tags: list[TagResponseBase]
@@ -257,52 +261,3 @@ class TransactionResponse(BaseModel):
         from_attributes=True,
         json_encoders={Decimal: format_monetary_decimal},
     )
-
-    @model_validator(mode="after")
-    def split_lines(self) -> "TransactionResponse":
-        if self.lines is None and (self.from_ is None or self.to is None):
-            raise ValueError(
-                translate(
-                    _("Either the 'lines', or 'to' and 'from' fields shall be set")
-                )
-            )
-
-        if self.lines is None and self.from_ is not None and self.to is not None:
-            return self
-
-        lines = self.lines
-        assert lines is not None
-
-        if len(lines) != 2:
-            translated_msg = translate(
-                n_(
-                    "Expected exactly 2 transaction lines, got {len_lines}",
-                    "Expected exactly 2 transaction lines, got {len_lines}",
-                )
-                .set_n(len(lines))
-                .set_kwargs(len_lines=len(lines))
-            )
-            raise ValueError(translated_msg)
-
-        if any(line.amount == 0 for line in lines):
-            raise ValueError(translate(_("Transaction line amounts cannot be zero")))
-
-        negative_lines = [line for line in lines if line.amount < 0]
-        positive_lines = [line for line in lines if line.amount > 0]
-
-        if len(negative_lines) != 1 or len(positive_lines) != 1:
-            translated_msg = translate(
-                _(
-                    "Expected exactly one negative and one positive amount, got "
-                    "{len_negative_lines} negative and {len_positive_lines} positive"
-                ).set_kwargs(
-                    len_negative_lines=len(negative_lines),
-                    len_positive_lines=len(positive_lines),
-                )
-            )
-            raise ValueError(translated_msg)
-
-        self.from_ = negative_lines[0]
-        self.to = positive_lines[0]
-
-        return self
