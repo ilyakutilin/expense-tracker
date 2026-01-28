@@ -83,4 +83,4 @@ if __name__ == "__main__":
 
     # Use current directory if no argument provided
     root_directory = sys.argv[1] if len(sys.argv) > 1 else "."
-    generate_tree_structure(root_directory, max_depth=4)
+    generate_tree_structure(root_directory, max_depth=5)
