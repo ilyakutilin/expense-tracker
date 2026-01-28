@@ -2,7 +2,17 @@ import datetime as dt
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Column, Date, ForeignKey, Index, Numeric, Table, Text, false
+from sqlalchemy import (
+    Column,
+    Date,
+    ForeignKey,
+    Index,
+    Numeric,
+    Table,
+    Text,
+    false,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.settings import settings
@@ -45,6 +55,16 @@ class TransactionORM(UserOwnedBaseORM):
         back_populates="transactions",
     )
 
+    __table_args__ = (
+        # Index for filtering active transactions in joins
+        Index(
+            "ix_transaction_user_active",
+            "user_id",
+            "id",
+            postgresql_where=(text("(is_deleted = false) AND (is_template = false)")),
+        ),
+    )
+
 
 class TransactionLineORM(BaseORM):
     transaction_id: Mapped[int] = mapped_column(
@@ -73,5 +93,11 @@ class TransactionLineORM(BaseORM):
     )
 
     __table_args__ = (
-        Index("ix_transaction_line_account_date", "account_id", "transaction_id"),
+        # Composite index for balance queries - most important!
+        Index(
+            "ix_transaction_line_account_transaction",
+            "account_id",
+            "transaction_id",
+            postgresql_where=(text("is_deleted = false")),
+        ),
     )
