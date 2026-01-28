@@ -4,6 +4,7 @@ from fastapi import Request
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.core.i18n import set_locale
 from app.utils.idgen import generate_request_id
 
 
@@ -60,12 +61,29 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             raise
 
 
-# TODO: This needs to be actually implemented
-# class I18nMiddleware(BaseHTTPMiddleware):
-#     async def dispatch(self, request: Request, call_next):
-#         # Get language from header or default
-#         lang = request.headers.get("Accept-Language", "en").split(",")[0][:2]
-#         request.state.language = lang
+class I18nMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, supported_locales=None):
+        super().__init__(app)
+        self.supported_locales = supported_locales or ["en", "ru"]
 
-#         response = await call_next(request)
-#         return response
+    async def dispatch(self, request: Request, call_next):
+        # Parse Accept-Language header
+        locale = self.get_locale_from_header(request)
+        set_locale(locale)
+
+        response = await call_next(request)
+        return response
+
+    def get_locale_from_header(self, request: Request) -> str:
+        """Extract locale from Accept-Language header"""
+        accept_language = request.headers.get("Accept-Language", "en")
+
+        # Parse the Accept-Language header (simplified)
+        # Format: "en-US,en;q=0.9,es;q=0.8"
+        for lang in accept_language.split(","):
+            lang_code = lang.split(";")[0].strip().split("-")[0]
+            if lang_code in self.supported_locales:
+                return lang_code
+
+        # Default to English
+        return "en"

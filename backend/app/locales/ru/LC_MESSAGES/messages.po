@@ -1,0 +1,741 @@
+# Russian translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-01-28 08:47+0300\n"
+"PO-Revision-Date: 2026-01-27 22:38+0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.3\n"
+
+#: app/api/errors.py:15
+msgid "Arguments must be a tuple, list or a dictionary"
+msgstr "В качестве аргументов принимаются кортеж, список или словарь"
+
+#: app/api/errors.py:16
+msgid "Assertion failed, {error}"
+msgstr "Утверждение не выполнено, {error}"
+
+#: app/api/errors.py:17
+msgid "Input should be a valid boolean, unable to interpret input"
+msgstr ""
+"Ввод должен быть допустимым логическим значением, невозможно "
+"интерпретировать ввод"
+
+#: app/api/errors.py:18
+msgid "Input should be a valid boolean"
+msgstr "Ввод должен быть допустимым логическим значением"
+
+#: app/api/errors.py:19
+msgid "Data should be valid {encoding}: {encoding_error}"
+msgstr "Данные должны быть в допустимой кодировке {encoding}: {encoding_error}"
+
+#: app/api/errors.py:20
+msgid "Data should have at most {max_length} byte"
+msgid_plural "Data should have at most {max_length} bytes"
+msgstr[0] "Данные должны иметь не более {max_length} байта"
+msgstr[1] "Данные должны иметь не более {max_length} байт"
+msgstr[2] "Данные должны иметь не более {max_length} байт"
+
+#: app/api/errors.py:25
+msgid "Data should have at least {min_length} byte"
+msgid_plural "Data should have at least {min_length} bytes"
+msgstr[0] "Данные должны иметь не менее {min_length} байта"
+msgstr[1] "Данные должны иметь не менее {min_length} байт"
+msgstr[2] "Данные должны иметь не менее {min_length} байт"
+
+#: app/api/errors.py:30
+msgid "Input should be a valid bytes"
+msgstr "Ввод должен быть допустимым объектом bytes"
+
+#: app/api/errors.py:31
+msgid "Input should be callable"
+msgstr "Ввод должен быть вызываемым объектом"
+
+#: app/api/errors.py:32
+msgid ""
+"Input should be a valid complex string following the rules at "
+"https://docs.python.org/3/library/functions.html#complex"
+msgstr ""
+"Ввод должен быть допустимой строкой комплексного числа, соответствующей "
+"правилам, описанным по адресу "
+"https://docs.python.org/3/library/functions.html#complex"
+
+#: app/api/errors.py:35
+msgid ""
+"Input should be a valid python complex object, a number, or a valid "
+"complex string following the rules at "
+"https://docs.python.org/3/library/functions.html#complex"
+msgstr ""
+"Ввод должен быть допустимой строкой комплексного числа, соответствующей "
+"правилам, описанным по адресу "
+"https://docs.python.org/3/library/functions.html#complex"
+
+#: app/api/errors.py:38
+msgid "Input should be an instance of {class_name}"
+msgstr "Ввод должен быть экземпляром класса {class_name}"
+
+#: app/api/errors.py:39
+msgid "Input should be a dictionary or an instance of {class_name}"
+msgstr "Ввод должен быть словарём или экземпляром класса {class_name}"
+
+#: app/api/errors.py:40
+msgid "Datetimes provided to dates should have zero time - e.g. be exact dates"
+msgstr ""
+"Объекты datetime, передаваемые для дат, должны иметь нулевое время "
+"(например, быть точными датами)"
+
+#: app/api/errors.py:43
+msgid "Input should be a valid date or datetime, {error}"
+msgstr "Ввод должен быть допустимой датой или объектом datetime, {error}"
+
+#: app/api/errors.py:46
+msgid "Date should be in the future"
+msgstr "Дата должна быть в будущем"
+
+#: app/api/errors.py:47
+msgid "Input should be a valid date in the format YYYY-MM-DD, {error}"
+msgstr "Ввод должен быть допустимой датой в формате ГГГГ-ММ-ДД, {error}"
+
+#: app/api/errors.py:48
+msgid "Date should be in the past"
+msgstr "Дата должна быть в прошлом"
+
+#: app/api/errors.py:49
+msgid "Input should be a valid date"
+msgstr "Ввод должен быть допустимой датой"
+
+#: app/api/errors.py:50
+msgid "Input should be a valid datetime or date, {error}"
+msgstr "Ввод должен быть допустимым объектом datetime или датой, {error}"
+
+#: app/api/errors.py:53
+msgid "Input should be in the future"
+msgstr "Ввод должен быть в будущем"
+
+#: app/api/errors.py:54
+msgid "Invalid datetime object, got {error}"
+msgstr "Неверный объект datetime, получено {error}"
+
+#: app/api/errors.py:55
+msgid "Input should be a valid datetime, {error}"
+msgstr "Ввод должен быть допустимым объектом datetime, {error}"
+
+#: app/api/errors.py:56
+msgid "Input should be in the past"
+msgstr "Ввод должен быть в прошлом"
+
+#: app/api/errors.py:57
+msgid "Input should be a valid datetime"
+msgstr "Ввод должен быть допустимым объектом datetime"
+
+#: app/api/errors.py:58
+msgid "Decimal input should have no more than {max_digits} digit in total"
+msgid_plural "Decimal input should have no more than {max_digits} digits in total"
+msgstr[0] "Число должно иметь не более {max_digits} цифры в общей сложности"
+msgstr[1] "Число должно иметь не более {max_digits} цифр в общей сложности"
+msgstr[2] "Число должно иметь не более {max_digits} цифр в общей сложности"
+
+#: app/api/errors.py:63
+msgid "Decimal input should have no more than {decimal_places} decimal place"
+msgid_plural "Decimal input should have no more than {decimal_places} decimal places"
+msgstr[0] "Число должно иметь не более {decimal_places} знака после запятой"
+msgstr[1] "Число должно иметь не более {decimal_places} знаков после запятой"
+msgstr[2] "Число должно иметь не более {decimal_places} знаков после запятой"
+
+#: app/api/errors.py:68
+msgid "Input should be a valid decimal"
+msgstr "Ввод должен быть допустимым десятичным числом"
+
+#: app/api/errors.py:69
+msgid "Decimal input should be an integer, float, string or Decimal object"
+msgstr ""
+"Число должно быть целым числом, числом с плавающей запятой, строкой или "
+"объектом Decimal"
+
+#: app/api/errors.py:72
+msgid ""
+"Decimal input should have no more than {whole_digits} digit before the "
+"decimal point"
+msgid_plural ""
+"Decimal input should have no more than {whole_digits} digits before the "
+"decimal point"
+msgstr[0] "В числе должно быть не более {whole_digits} цифры до запятой"
+msgstr[1] "В числе должно быть не более {whole_digits} цифр до запятой"
+msgstr[2] "В числе должно быть не более {whole_digits} цифр до запятой"
+
+#: app/api/errors.py:77
+msgid ""
+"The default factory uses validated data, but at least one validation "
+"error occurred"
+msgstr ""
+"Фабрика по умолчанию использует проверенные данные, но произошла хотя бы "
+"одна ошибка валидации"
+
+#: app/api/errors.py:80
+msgid "Input should be a valid dictionary"
+msgstr "Ввод должен быть допустимым словарём"
+
+#: app/api/errors.py:81 app/api/errors.py:114
+msgid "Input should be {expected}"
+msgstr "Ввод должен быть {expected}"
+
+#: app/api/errors.py:82
+msgid "Extra inputs are not permitted"
+msgstr "Дополнительные входные данные не разрешены"
+
+#: app/api/errors.py:83
+msgid "Input should be a finite number"
+msgstr "Ввод должен быть конечным числом"
+
+#: app/api/errors.py:84
+msgid "Input should be a valid number, unable to parse string as a number"
+msgstr ""
+"Ввод должен быть допустимым числом, не удалось преобразовать строку в "
+"число"
+
+#: app/api/errors.py:87
+msgid "Input should be a valid number"
+msgstr "Ввод должен быть допустимым числом"
+
+#: app/api/errors.py:88
+msgid "Field is frozen"
+msgstr "Поле заморожено"
+
+#: app/api/errors.py:89
+msgid "Instance is frozen"
+msgstr "Экземпляр заморожен"
+
+#: app/api/errors.py:90
+msgid "Input should be a valid frozenset"
+msgstr "Ввод должен быть допустимым объектом frozenset"
+
+#: app/api/errors.py:91
+msgid "Error extracting attribute: {error}"
+msgstr "Ошибка извлечения атрибута: {error}"
+
+#: app/api/errors.py:92
+msgid "Input should be greater than {gt}"
+msgstr "Ввод должен быть больше {gt}"
+
+#: app/api/errors.py:93
+msgid "Input should be greater than or equal to {ge}"
+msgstr "Значение должно быть больше или равно {ge}"
+
+#: app/api/errors.py:94
+msgid "Input should be a valid integer, got a number with a fractional part"
+msgstr "Значение должно быть целым числом, получено число с дробной частью"
+
+#: app/api/errors.py:97
+msgid "Input should be a valid integer, unable to parse string as an integer"
+msgstr ""
+"Значение должно быть целым числом, не удалось преобразовать строку в "
+"целое число"
+
+#: app/api/errors.py:100
+msgid "Unable to parse input string as an integer, exceeded maximum size"
+msgstr ""
+"Не удалось преобразовать строку в целое число, превышен максимальный "
+"размер"
+
+#: app/api/errors.py:103
+msgid "Input should be a valid integer"
+msgstr "Значение должно быть целым числом"
+
+#: app/api/errors.py:104
+msgid "Keys should be strings"
+msgstr "Ключи должны быть строками"
+
+#: app/api/errors.py:105
+msgid "Input should be an instance of {class}"
+msgstr "Значение должно быть экземпляром {class}"
+
+#: app/api/errors.py:106
+msgid "Input should be a subclass of {class}"
+msgstr "Значение должно быть подклассом {class}"
+
+#: app/api/errors.py:107
+msgid "Input should be iterable"
+msgstr "Значение должно быть итерируемым"
+
+#: app/api/errors.py:108
+msgid "Error iterating over object, error: {error}"
+msgstr "Ошибка при итерации по объекту, ошибка: {error}"
+
+#: app/api/errors.py:109
+msgid "Invalid JSON: {error}"
+msgstr "Некорректный JSON: {error}"
+
+#: app/api/errors.py:110
+msgid "JSON input should be string, bytes or bytearray"
+msgstr "Входные данные JSON должны быть строкой, байтами или байтовым массивом"
+
+#: app/api/errors.py:111
+msgid "Input should be less than {lt}"
+msgstr "Значение должно быть меньше {lt}"
+
+#: app/api/errors.py:112
+msgid "Input should be less than or equal to {le}"
+msgstr "Значение должно быть меньше или равно {le}"
+
+#: app/api/errors.py:113
+msgid "Input should be a valid list"
+msgstr "Значение должно быть корректным списком"
+
+#: app/api/errors.py:115
+msgid "Input should be a valid mapping, error: {error}"
+msgstr "Значение должно быть корректным отображением, ошибка: {error}"
+
+#: app/api/errors.py:116
+msgid "Field required"
+msgstr "Обязательное поле"
+
+#: app/api/errors.py:117
+msgid "Missing required argument"
+msgstr "Отсутствует обязательный аргумент"
+
+#: app/api/errors.py:118
+msgid "Missing required keyword only argument"
+msgstr "Отсутствует обязательный именованный аргумент"
+
+#: app/api/errors.py:119
+msgid "Missing required positional only argument"
+msgstr "Отсутствует обязательный позиционный аргумент"
+
+#: app/api/errors.py:120
+msgid "Input should be the 'MISSING' sentinel"
+msgstr "Значение должно быть маркером 'MISSING'"
+
+#: app/api/errors.py:121
+msgid "Input should be a valid dictionary or object to extract fields from"
+msgstr "Значение должно быть словарем или объектом, из которого можно извлечь поля"
+
+#: app/api/errors.py:124
+msgid "Input should be a valid dictionary or instance of {class_name}"
+msgstr "Значение должно быть словарем или экземпляром {class_name}"
+
+#: app/api/errors.py:125
+msgid "Got multiple values for argument"
+msgstr "Получено несколько значений для аргумента"
+
+#: app/api/errors.py:126
+msgid "Input should be a multiple of {multiple_of}"
+msgstr "Значение должно быть кратно {multiple_of}"
+
+#: app/api/errors.py:127
+msgid ""
+"Cannot check `{method_name}` when validating from json, use a "
+"JsonOrPython validator instead"
+msgstr ""
+"Невозможно проверить {method_name} при валидации из json, используйте "
+"вместо этого валидатор JsonOrPython"
+
+#: app/api/errors.py:130
+msgid "Object has no attribute '{attribute}'"
+msgstr "Объект не имеет атрибута '{attribute}'"
+
+#: app/api/errors.py:131
+msgid "Input should be None"
+msgstr "Значение должно быть None"
+
+#: app/api/errors.py:132
+msgid "Recursion error - cyclic reference detected"
+msgstr "Ошибка рекурсии - обнаружена циклическая ссылка"
+
+#: app/api/errors.py:133
+msgid "Set items should be hashable"
+msgstr "Элементы множества должны быть хэшируемыми"
+
+#: app/api/errors.py:134
+msgid "Input should be a valid set"
+msgstr "Значение должно быть корректным множеством"
+
+#: app/api/errors.py:135
+msgid "String should match pattern '{pattern}'"
+msgstr "Строка должна соответствовать шаблону '{pattern}'"
+
+#: app/api/errors.py:136
+msgid "Input should be a string, not an instance of a subclass of str"
+msgstr "Значение должно быть строкой, а не экземпляром подкласса str"
+
+#: app/api/errors.py:139
+msgid "String should have at most {max_length} character"
+msgid_plural "String should have at most {max_length} characters"
+msgstr[0] "Строка должна содержать не более {max_length} символа"
+msgstr[1] "Строка должна содержать не более {max_length} символов"
+msgstr[2] "Строка должна содержать не более {max_length} символов"
+
+#: app/api/errors.py:144
+msgid "String should have at least {min_length} character"
+msgid_plural "String should have at least {min_length} characters"
+msgstr[0] "Строка должна содержать не менее {min_length} символа"
+msgstr[1] "Строка должна содержать не менее {min_length} символов"
+msgstr[2] "Строка должна содержать не менее {min_length} символов"
+
+#: app/api/errors.py:149
+msgid "Input should be a valid string"
+msgstr "Значение должно быть корректной строкой"
+
+#: app/api/errors.py:150
+msgid ""
+"Input should be a valid string, unable to parse raw data as a unicode "
+"string"
+msgstr ""
+"Значение должно быть корректной строкой, не удалось преобразовать сырые "
+"данные в unicode строку"
+
+#: app/api/errors.py:153
+msgid "Input should be a valid timedelta, {error}"
+msgstr "Значение должно быть корректным объектом timedelta, {error}"
+
+#: app/api/errors.py:154
+msgid "Input should be a valid timedelta"
+msgstr "Значение должно быть корректным объектом timedelta"
+
+#: app/api/errors.py:155
+msgid "Input should be in a valid time format, {error}"
+msgstr "Значение должно быть в корректном формате времени, {error}"
+
+#: app/api/errors.py:156
+msgid "Input should be a valid time"
+msgstr "Значение должно быть корректным временем"
+
+#: app/api/errors.py:157
+msgid "Input should have timezone info"
+msgstr "Значение должно содержать информацию о часовом поясе"
+
+#: app/api/errors.py:158
+msgid "Input should not have timezone info"
+msgstr "Значение не должно содержать информацию о часовом поясе"
+
+#: app/api/errors.py:159
+msgid ""
+"{field_type} should have at most {max_length} item after validation, not "
+"{actual_length}"
+msgid_plural ""
+"{field_type} should have at most {max_length} items after validation, not"
+" {actual_length}"
+msgstr[0] ""
+"Поле {field_type} должно содержать не более {max_length} элемента после "
+"валидации, а не {actual_length}"
+msgstr[1] ""
+"Поле {field_type} должно содержать не более {max_length} элементов после "
+"валидации, а не {actual_length}"
+msgstr[2] ""
+"Поле {field_type} должно содержать не более {max_length} элементов после "
+"валидации, а не {actual_length}"
+
+#: app/api/errors.py:164
+msgid ""
+"{field_type} should have at least {min_length} item after validation, not"
+" {actual_length}"
+msgid_plural ""
+"{field_type} should have at least {min_length} items after validation, "
+"not {actual_length}"
+msgstr[0] ""
+"Поле {field_type} должно содержать не менее {max_length} элемента после "
+"валидации, а не {actual_length}"
+msgstr[1] ""
+"Поле {field_type} должно содержать не менее {max_length} элементов после "
+"валидации, а не {actual_length}"
+msgstr[2] ""
+"Поле {field_type} должно содержать не менее {max_length} элементов после "
+"валидации, а не {actual_length}"
+
+#: app/api/errors.py:169
+msgid "Input should be a valid tuple"
+msgstr "Значение должно быть корректным кортежем"
+
+#: app/api/errors.py:170
+msgid "Unexpected keyword argument"
+msgstr "Неожиданный именованный аргумент"
+
+#: app/api/errors.py:171
+msgid "Unexpected positional argument"
+msgstr "Неожиданный позиционный аргумент"
+
+#: app/api/errors.py:172
+msgid ""
+"Input tag '{tag}' found using {discriminator} does not match any of the "
+"expected tags: {expected_tags}"
+msgstr ""
+"Найденный тег '{tag}' с помощью {discriminator} не соответствует ни "
+"одному из ожидаемых тегов: {expected_tags}"
+
+#: app/api/errors.py:175
+msgid "Unable to extract tag using discriminator {discriminator}"
+msgstr "Не удалось извлечь тег с помощью дискриминатора {discriminator}"
+
+#: app/api/errors.py:178
+msgid "Input should be a valid URL, {error}"
+msgstr "Введенное значение должно быть корректным URL, {error}"
+
+#: app/api/errors.py:179
+msgid "URL scheme should be {expected_schemes}"
+msgstr "Протокол URL должен быть {expected_schemes}"
+
+#: app/api/errors.py:180
+msgid "Input violated strict URL syntax rules, {error}"
+msgstr "Введенное значение нарушает строгие правила синтаксиса URL, {error}"
+
+#: app/api/errors.py:181
+msgid "URL should have at most {max_length} character"
+msgid_plural "URL should have at most {max_length} characters"
+msgstr[0] "URL должен содержать не более {max_length} символа"
+msgstr[1] "URL должен содержать не более {max_length} символов"
+msgstr[2] "URL должен содержать не более {max_length} символов"
+
+#: app/api/errors.py:186
+msgid "URL input should be a string or URL"
+msgstr "URL должен быть строкой или объектом URL"
+
+#: app/api/errors.py:187
+msgid "Input should be a valid UUID, {error}"
+msgstr "Введенное значение должно быть корректным UUID, {error}"
+
+#: app/api/errors.py:188
+msgid "UUID input should be a string, bytes or UUID object"
+msgstr "UUID должен быть строкой, байтами или объектом UUID"
+
+#: app/api/errors.py:189
+msgid "UUID version {expected_version} expected"
+msgstr "Ожидался UUID версии {expected_version}"
+
+#: app/api/errors.py:190
+msgid "Value error, {error}"
+msgstr "Ошибка значения, {error}"
+
+#: app/api/errors.py:268
+msgid "An unexpected error occurred on the server side"
+msgstr "Произошла непредвиденная ошибка на стороне сервера"
+
+#: app/api/errors.py:270
+msgid "Please contact support if this persists"
+msgstr "Если проблема повторится, пожалуйста, обратитесь в поддержку"
+
+#: app/api/errors.py:314
+msgid "Validation failed for one or several fields."
+msgstr "Валидация не пройдена для одного или нескольких полей."
+
+#: app/core/exceptions.py:37
+msgid "Resource not found"
+msgstr "Ресурс не найден"
+
+#: app/core/exceptions.py:53
+msgid "Bad request"
+msgstr "Неверный запрос"
+
+#: app/core/exceptions.py:69
+msgid "Unauthorized"
+msgstr "Неавторизован"
+
+#: app/core/exceptions.py:87
+msgid "Forbidden"
+msgstr "Запрещено"
+
+#: app/core/exceptions.py:103
+msgid "Conflict"
+msgstr "Конфликт"
+
+#: app/core/exceptions.py:119
+msgid "Referential integrity violation"
+msgstr "Нарушение ссылочной целостности"
+
+#: app/core/auth/dependency.py:57
+msgid "Could not validate credentials"
+msgstr "Не удалось проверить учетные данные"
+
+#: app/core/auth/dependency.py:93
+msgid "Insufficient permissions"
+msgstr "Недостаточно прав"
+
+#: app/schemas/transaction.py:43
+msgid "Account ID and amount cannot be None for the purpose of lines validation"
+msgstr "В рамках валидации строк транзакции ID счета и сумма не могут быть None"
+
+#: app/schemas/transaction.py:52
+msgid ""
+"There should be exacly one transaction line for a transaction of type "
+"'{type}'; got {len_lines}"
+msgid_plural ""
+"There should be exacly one transaction line for a transaction of type "
+"'{type}'; got {len_lines}"
+msgstr[0] ""
+"В транзакции типа '{type}' должна быть ровно одна строка; "
+"на вход передана {len_lines} строка"
+msgstr[1] ""
+"В транзакции типа '{type}' должна быть ровно одна строка; "
+"на вход передано {len_lines} строки"
+msgstr[2] ""
+"В транзакции типа '{type}' должна быть ровно одна строка; "
+"на вход передано {len_lines} строк"
+
+#: app/schemas/transaction.py:66
+msgid ""
+"There should be exacly two transaction lines for a transaction of type "
+"'{type}'; got {len_lines}"
+msgid_plural ""
+"There should be exacly two transaction lines for a transaction of type "
+"'{type}'; got {len_lines}"
+msgstr[0] ""
+"В транзакции типа '{type}' должно быть ровно две строки; "
+"на вход передана {len_lines} строка"
+msgstr[1] ""
+"В транзакции типа '{type}' должно быть ровно две строки; "
+"на вход передано {len_lines} строки"
+msgstr[2] ""
+"В транзакции типа '{type}' должно быть ровно две строки; "
+"на вход передано {len_lines} строк"
+
+#: app/schemas/transaction.py:82
+msgid "Amounts in transaction lines shall be with opposite signs"
+msgstr "Суммы в строках транзакции должны иметь противоположные знаки"
+
+#: app/schemas/transaction.py:89
+msgid "Cannot credit the amount to the same account it is debited from"
+msgstr "Невозможно зачислить сумму на тот же счет, с которого она списана"
+
+#: app/schemas/transaction.py:107
+msgid "Amount cannot be zero"
+msgstr "Сумма не может быть равна нулю"
+
+#: app/schemas/transaction.py:115
+msgid "Failed to validate the scale of the numeric value."
+msgstr "Валидация масштаба числа не пройдена."
+
+#: app/schemas/transaction.py:120
+msgid ""
+"Numeric value has {scale} decimal place, which exceeds the max scale of "
+"{max_scale}."
+msgid_plural ""
+"Numeric value has {scale} decimal places, which exceeds the max scale of "
+"{max_scale}."
+msgstr[0] ""
+"Числовое значение имеет {scale} знак после запятой, что превышает "
+"максимальный масштаб {max_scale}."
+msgstr[1] ""
+"Числовое значение имеет {scale} знака после запятой, что превышает "
+"максимальный масштаб {max_scale}."
+msgstr[2] ""
+"Числовое значение имеет {scale} знаков после запятой, что превышает "
+"максимальный масштаб {max_scale}."
+
+#: app/schemas/transaction.py:134
+msgid ""
+"Amount value shall be between {max_value_negative} and "
+"{max_value_positive} (not inclusive)"
+msgstr ""
+"Значение суммы должно быть в диапазоне от {max_value_negative} до "
+"{max_value_positive} (не включительно)"
+
+#: app/schemas/transaction.py:177
+msgid "Cannot assign more than 100 tags to a transaction"
+msgstr "Невозможно назначить транзакции более 100 тегов"
+
+#: app/schemas/transaction.py:211
+msgid "At least one field must be set"
+msgstr "Должно быть задано хотя бы одно поле"
+
+#: app/schemas/transaction.py:222
+msgid "Transaction type shall be set when validating the full lines"
+msgstr "При валидации полных строк должен быть задан тип транзакции"
+
+#: app/schemas/transaction.py:266
+msgid "Either the 'lines', or 'to' and 'from' fields shall be set"
+msgstr "Должны быть заданы либо поле 'lines', либо поля 'to' и 'from'"
+
+#: app/schemas/transaction.py:278
+msgid "Expected exactly 2 transaction lines, got {len_lines}"
+msgid_plural "Expected exactly 2 transaction lines, got {len_lines}"
+msgstr[0] "Ожидалось ровно 2 строки транзакции, получена {len_lines} строка"
+msgstr[1] "Ожидалось ровно 2 строки транзакции, получено {len_lines} строки"
+msgstr[2] "Ожидалось ровно 2 строки транзакции, получено {len_lines} строк"
+
+#: app/schemas/transaction.py:288
+msgid "Transaction line amounts cannot be zero"
+msgstr "Суммы в строках транзакции не могут быть нулевыми"
+
+#: app/schemas/transaction.py:295
+msgid ""
+"Expected exactly one negative and one positive amount, got "
+"{len_negative_lines} negative and {len_positive_lines} positive"
+msgstr ""
+"Ожидалась ровно одна отрицательная и одна положительная сумма, получено "
+"{len_negative_lines} отрицательных и {len_positive_lines} положительных"
+
+#: app/services/account_service.py:49
+msgid "Account with id {account_id} not found"
+msgstr "Счёт с ID {account_id} не найден"
+
+#: app/services/account_service.py:66
+msgid "Account with name '{name}' already exists"
+msgstr "Счёт с именем '{name}' уже существует"
+
+#: app/services/account_service.py:85
+msgid "Parent account with ID {parent_id} does not exist."
+msgstr "Родительский счёт с ID {parent_id} не существует."
+
+#: app/services/account_service.py:92
+msgid "Currency with ID {currency_id} does not exist."
+msgstr "Валюта с ID {currency_id} не существует."
+
+#: app/services/account_service.py:113
+msgid "An account cannot be a sub-account of itself"
+msgstr "Счёт не может быть субсчётом самого себя"
+
+#: app/services/account_service.py:200 app/services/currency_service.py:101
+#: app/services/user_service.py:134
+msgid "No fields to update"
+msgstr "Нет полей для обновления"
+
+#: app/services/auth_service.py:33 app/services/user_service.py:57
+msgid "User with email '{email}' already exists"
+msgstr "Пользователь с электронной почтой '{email}' уже существует"
+
+#: app/services/auth_service.py:46 app/services/user_service.py:47
+msgid "User with id {user_id} not found"
+msgstr "Пользователь с id {user_id} не найден"
+
+#: app/services/auth_service.py:77
+msgid "Incorrect email or password"
+msgstr "Неверный адрес электронной почты или пароль"
+
+#: app/services/currency_service.py:48
+msgid "Currency with id {currency_id} not found"
+msgstr "Валюта с id {currency_id} не найдена"
+
+#: app/services/currency_service.py:60
+msgid "Currency with code '{code}' already exists"
+msgstr "Валюта с кодом '{code}' уже существует"
+
+#: app/services/tag_service.py:48
+msgid "Tag with name '{name}' already exists"
+msgstr "Тег с именем '{name}' уже существует"
+
+#: app/services/tag_service.py:67
+msgid "Tag with id {tag_id} not found"
+msgstr "Тег с id {tag_id} не найден"
+
+#: app/services/transaction_service.py:76
+msgid "Referential integrity violation: no record(s) by the specified id(s)"
+msgstr "Нарушение ссылочной целостности: нет записей по указанному(ым) id"
+
+#: app/services/transaction_service.py:94
+msgid "Transaction with id {transaction_id} not found"
+msgstr "Транзакция с id {transaction_id} не найдена"
+
+#: app/services/transaction_service.py:246
+msgid "Transaction line IDs do not match the transaction"
+msgstr "ID строк транзакции не соответствуют транзакции"
+

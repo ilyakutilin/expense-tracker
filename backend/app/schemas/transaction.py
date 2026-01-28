@@ -13,6 +13,7 @@ from pydantic import (
 )
 from typing_extensions import Self
 
+from app.core.i18n import _, n_, translate
 from app.core.settings import settings
 from app.schemas import StrippedStr
 from app.schemas.account import AccountResponseBaseWithCurrency
@@ -38,38 +39,55 @@ def _validate_lines(
     for line in lines:
         if line.account_id is None or line.amount is None:
             raise ValueError(
-                (
-                    "Account ID and amount cannot be None "
-                    "for the purpose of lines validation"
+                translate(
+                    _(
+                        "Account ID and amount cannot be None "
+                        "for the purpose of lines validation"
+                    )
                 )
             )
 
     if type_ == TransactionType.CORRECTION and len(lines) != 1:
-        raise ValueError(
-            (
-                "There should be exacly one transaction line for a transaction "
-                f"of type '{type_.value}'; got {len(lines)}"
+        translated_msg = translate(
+            n_(
+                "There should be exacly one transaction line for a transaction of type "
+                "'{type}'; got {len_lines}",
+                "There should be exacly one transaction line for a transaction of type "
+                "'{type}'; got {len_lines}",
             )
+            .set_n(len(lines))
+            .set_kwargs(type=type_.value, len_lines=len(lines))
         )
+        raise ValueError(translated_msg)
 
     if type_ != TransactionType.CORRECTION:
         if len(lines) != 2:
-            raise ValueError(
-                (
+            translated_msg = translate(
+                n_(
                     "There should be exacly two transaction lines for a transaction "
-                    f"of type '{type_.value}'; got {len(lines)}"
+                    "of type '{type}'; got {len_lines}",
+                    "There should be exacly two transaction lines for a transaction "
+                    "of type '{type}'; got {len_lines}",
                 )
+                .set_n(len(lines))
+                .set_kwargs(type=type_.value, len_lines=len(lines))
             )
+            raise ValueError(translated_msg)
+
         lines.sort(key=lambda x: x.amount)  # type: ignore
 
         if not (lines[0].amount < 0 and lines[1].amount > 0):  # type: ignore
             raise ValueError(
-                "Amounts in transaction lines shall be with opposite signs"
+                translate(
+                    _("Amounts in transaction lines shall be with opposite signs")
+                )
             )
 
         if lines[0].account_id == lines[1].account_id:
             raise ValueError(
-                "Cannot credit the amount to the same account it is debited from"
+                translate(
+                    _("Cannot credit the amount to the same account it is debited from")
+                )
             )
 
 
@@ -86,31 +104,41 @@ class TransactionLineBase(BaseModel):
             return None
 
         if v == 0:
-            raise ValueError("Amount cannot be zero")
+            raise ValueError(translate(_("Amount cannot be zero")))
 
         exponent = v.as_tuple().exponent
 
         # Exponent is negative for a value with a fractional part.
         # e.g., Decimal('1.23').as_tuple() -> (0, (1, 2, 3), -2). Scale is |-2| = 2.
         if not isinstance(exponent, int):
-            raise ValueError("Failed to validate the scale of the numeric value.")
+            raise ValueError(
+                translate(_("Failed to validate the scale of the numeric value."))
+            )
         scale = -exponent
         if scale > MAX_SCALE:
-            raise ValueError(
-                (
-                    f"Numeric value has {scale} decimal places, which exceeds "
-                    f"the max scale of {MAX_SCALE}."
+            translated_msg = translate(
+                n_(
+                    "Numeric value has {scale} decimal place, which exceeds "
+                    "the max scale of {max_scale}.",
+                    "Numeric value has {scale} decimal places, which exceeds "
+                    "the max scale of {max_scale}.",
                 )
+                .set_n(scale)
+                .set_kwargs(scale=scale, max_scale=MAX_SCALE)
             )
+            raise ValueError(translated_msg)
 
         max_value = 10 ** (MAX_PRECISION - MAX_SCALE)
         if v >= max_value:
-            raise ValueError(
-                (
-                    f"Amount value shall be between {-max_value} and {max_value} "
-                    "(not inclusive)"
+            translated_msg = translate(
+                _(
+                    "Amount value shall be between {max_value_negative} "
+                    "and {max_value_positive} (not inclusive)"
+                ).set_kwargs(
+                    max_value_negative=-max_value, max_value_positive=max_value
                 )
             )
+            raise ValueError(translated_msg)
 
         return v
 
@@ -145,7 +173,9 @@ class TransactionValidatorMixin:
 
         v = list(dict.fromkeys(v))
         if len(v) > 100:
-            raise ValueError("Cannot assign more than 100 tags to a transaction")
+            raise ValueError(
+                translate(_("Cannot assign more than 100 tags to a transaction"))
+            )
 
         return v
 
@@ -178,7 +208,7 @@ class TransactionUpdate(TransactionValidatorMixin, BaseModel):
     @model_validator(mode="after")
     def check_at_least_one_field_set(self) -> Self:
         if not self.model_dump(exclude_unset=True):
-            raise ValueError("At least one field must be set")
+            raise ValueError(translate(_("At least one field must be set")))
         return self
 
     @model_validator(mode="after")
@@ -188,7 +218,9 @@ class TransactionUpdate(TransactionValidatorMixin, BaseModel):
 
         if self.type_ is None:
             raise ValueError(
-                "Transaction type shall be set when validating the full lines"
+                translate(
+                    _("Transaction type shall be set when validating the full lines")
+                )
             )
 
         _validate_lines(self.type_, self.full_lines)
@@ -230,7 +262,9 @@ class TransactionResponse(BaseModel):
     def split_lines(self) -> "TransactionResponse":
         if self.lines is None and (self.from_ is None or self.to is None):
             raise ValueError(
-                "Either the 'lines', or 'to' and 'from' fields shall be set"
+                translate(
+                    _("Either the 'lines', or 'to' and 'from' fields shall be set")
+                )
             )
 
         if self.lines is None and self.from_ is not None and self.to is not None:
@@ -240,19 +274,33 @@ class TransactionResponse(BaseModel):
         assert lines is not None
 
         if len(lines) != 2:
-            raise ValueError(f"Expected exactly 2 transaction lines, got {len(lines)}")
+            translated_msg = translate(
+                n_(
+                    "Expected exactly 2 transaction lines, got {len_lines}",
+                    "Expected exactly 2 transaction lines, got {len_lines}",
+                )
+                .set_n(len(lines))
+                .set_kwargs(len_lines=len(lines))
+            )
+            raise ValueError(translated_msg)
 
         if any(line.amount == 0 for line in lines):
-            raise ValueError("Transaction line amounts cannot be zero")
+            raise ValueError(translate(_("Transaction line amounts cannot be zero")))
 
         negative_lines = [line for line in lines if line.amount < 0]
         positive_lines = [line for line in lines if line.amount > 0]
 
         if len(negative_lines) != 1 or len(positive_lines) != 1:
-            raise ValueError(
-                "Expected exactly one negative and one positive amount, "
-                f"got {len(negative_lines)} negative and {len(positive_lines)} positive"
+            translated_msg = translate(
+                _(
+                    "Expected exactly one negative and one positive amount, got "
+                    "{len_negative_lines} negative and {len_positive_lines} positive"
+                ).set_kwargs(
+                    len_negative_lines=len(negative_lines),
+                    len_positive_lines=len(positive_lines),
+                )
             )
+            raise ValueError(translated_msg)
 
         self.from_ = negative_lines[0]
         self.to = positive_lines[0]

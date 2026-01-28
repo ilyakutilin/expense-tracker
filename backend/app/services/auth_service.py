@@ -12,6 +12,7 @@ from app.core.auth.security import (
     verify_password,
 )
 from app.core.cache import cached
+from app.core.i18n import _
 from app.models.user import UserORM, UserRole
 from app.schemas.auth import Token, UserRegister
 from app.schemas.cache import CachePattern, Entity
@@ -29,7 +30,8 @@ class AuthService:
         exists: bool = await self.crud.exists(self.db, email=email)
         if exists:
             raise exc.ConflictError(
-                message=f"User with email '{email}' already exists",
+                translatable_message=_("User with email '{email}' already exists"),
+                email=email,
                 detail={"email": email},
             )
 
@@ -41,7 +43,8 @@ class AuthService:
         )
         if not user_orm:
             raise exc.NotFoundError(
-                message=f"User with id {user_id} not found",
+                translatable_message=_("User with id {user_id} not found"),
+                user_id=user_id,
                 detail={"id": user_id},
             )
         return user_orm
@@ -60,7 +63,7 @@ class AuthService:
         )
         if not user_orm:
             raise exc.DatabaseError(
-                message=("Created user could not be fetched from the database"),
+                message="Created user could not be fetched from the database",
                 detail={"id": user_id, "email": user_register.email},
             )
         return UserResponse.model_validate(user_orm)
@@ -71,7 +74,7 @@ class AuthService:
         )
 
         err = exc.UnauthorizedError(
-            message="Incorrect email or password",
+            translatable_message=_("Incorrect email or password"),
         )
 
         if not user_orm:
@@ -80,11 +83,7 @@ class AuthService:
         if not verify_password(password, user_orm.password_hash):
             raise err
 
-        access_token = create_access_token(
-            data={
-                "sub": str(user_orm.id_)
-            },  # "sub" is the standard JWT claim for subject
-        )
+        access_token = create_access_token(data={"sub": str(user_orm.id_)})
 
         return Token(access_token=access_token, token_type="bearer")
 

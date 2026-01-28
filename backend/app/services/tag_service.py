@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import (
 from app import crud
 from app.core import exceptions as exc
 from app.core.cache import cached, invalidate_cache
+from app.core.i18n import _
 from app.filters.tag import TagFilterParams
 from app.models.tag import TagORM
 from app.schemas.cache import CachePattern, Entity
@@ -44,7 +45,8 @@ class TagService:
         )
         if exists:
             raise exc.ConflictError(
-                message=f"Tag with name '{name}' already exists",
+                translatable_message=_("Tag with name '{name}' already exists"),
+                name=name,
                 detail={
                     "name": name,
                     "user_id": self.user_id,
@@ -62,7 +64,8 @@ class TagService:
         )
         if not tag_orm:
             raise exc.NotFoundError(
-                message=f"Tag with id {tag_id} not found",
+                translatable_message=_("Tag with id {tag_id} not found"),
+                tag_id=tag_id,
                 detail={
                     "id": tag_id,
                     "user_id": self.user_id,
@@ -119,7 +122,7 @@ class TagService:
         )
         if not tag_orm:
             raise exc.DatabaseError(
-                message=("Created tag could not be fetched from the database"),
+                message="Created tag could not be fetched from the database",
                 detail={
                     "id": tag_id,
                     "name": tag_create.name,
@@ -148,7 +151,7 @@ class TagService:
             )
             if not updated_tag_orm:
                 raise exc.DatabaseError(
-                    message=("Updated account could not be fetched from the database"),
+                    message="Updated account could not be fetched from the database",
                     detail={
                         "id": tag_id,
                         "user_id": self.user_id,
