@@ -14,7 +14,6 @@ from app.models.tag import TagORM
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.tag import TagCreateUpdate, TagResponse
-from app.services import get_msg
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.TAG,
@@ -46,7 +45,8 @@ class TagService:
         )
         if exists:
             raise exc.ConflictError(
-                message=get_msg(_("Tag with name '{name}' already exists"), name=name),
+                translatable_message=_("Tag with name '{name}' already exists"),
+                name=name,
                 detail={
                     "name": name,
                     "user_id": self.user_id,
@@ -64,7 +64,8 @@ class TagService:
         )
         if not tag_orm:
             raise exc.NotFoundError(
-                message=get_msg(_("Tag with id {tag_id} not found"), tag_id=tag_id),
+                translatable_message=_("Tag with id {tag_id} not found"),
+                tag_id=tag_id,
                 detail={
                     "id": tag_id,
                     "user_id": self.user_id,
@@ -121,7 +122,7 @@ class TagService:
         )
         if not tag_orm:
             raise exc.DatabaseError(
-                message=(_("Created tag could not be fetched from the database")),
+                message="Created tag could not be fetched from the database",
                 detail={
                     "id": tag_id,
                     "name": tag_create.name,
@@ -150,9 +151,7 @@ class TagService:
             )
             if not updated_tag_orm:
                 raise exc.DatabaseError(
-                    message=(
-                        _("Updated account could not be fetched from the database")
-                    ),
+                    message="Updated account could not be fetched from the database",
                     detail={
                         "id": tag_id,
                         "user_id": self.user_id,

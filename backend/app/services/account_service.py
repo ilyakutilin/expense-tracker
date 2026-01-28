@@ -14,7 +14,6 @@ from app.models.account import AccountORM
 from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
-from app.services import get_msg
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.ACCOUNT,
@@ -47,9 +46,8 @@ class AccountService:
         )
         if not account_orm:
             raise exc.NotFoundError(
-                message=get_msg(
-                    _("Account with id {account_id} not found"), account_id=account_id
-                ),
+                translatable_message=_("Account with id {account_id} not found"),
+                account_id=account_id,
                 detail={
                     "id": account_id,
                     "user_id": self.user_id,
@@ -65,9 +63,8 @@ class AccountService:
         )
         if exists:
             raise exc.ConflictError(
-                message=get_msg(
-                    _("Account with name '{name}' already exists"), name=name
-                ),
+                translatable_message=_("Account with name '{name}' already exists"),
+                name=name,
                 detail={
                     "name": name,
                     "user_id": self.user_id,
@@ -85,38 +82,35 @@ class AccountService:
             )
             if not parent_exists:
                 detail["parent_id"] = parent_id
-                msg_txt = get_msg(
-                    _("Parent account with ID {parent_id} does not exist."),
-                    parent_id=parent_id,
-                )
+                msg_txt = _("Parent account with ID {parent_id} does not exist.")
 
         if currency_id:
             currency_exists = await self.currency_crud.exists(self.db, id_=currency_id)
             if not currency_exists:
                 detail["currency_id"] = currency_id
                 msg_txt = (
-                    get_msg(
-                        _("Currency with ID {currency_id} does not exist."),
-                        currency_id=currency_id,
-                    )
+                    _("Currency with ID {currency_id} does not exist.")
                     if not msg_txt
-                    else get_msg(
-                        _(
+                    else _(
+                        (
                             "Parent account with ID {parent_id} and currency with ID "
                             "{currency_id} do not exist."
-                        ),
-                        parent_id=parent_id,
-                        currency_id=currency_id,
+                        )
                     )
                 )
 
         if msg_txt:
-            raise exc.ReferentialIntergrityError(message=msg_txt, detail=detail)
+            raise exc.ReferentialIntergrityError(
+                translatable_message=msg_txt,
+                detail=detail,
+                parent_id=parent_id,
+                currency_id=currency_id,
+            )
 
     def _prevent_self_parenting(self, account_id: int, parent_id: int) -> None:
         if account_id == parent_id:
             raise exc.ReferentialIntergrityError(
-                message=_("An account cannot be a sub-account of itself"),
+                translatable_message=_("An account cannot be a sub-account of itself"),
                 detail={"account_id": account_id, "parent_id": parent_id},
             )
 
@@ -176,7 +170,7 @@ class AccountService:
         )
         if not account_orm:
             raise exc.DatabaseError(
-                message=(_("Created account could not be fetched from the database")),
+                message="Created account could not be fetched from the database",
                 detail={
                     "id": account_id,
                     "name": account_create.name,
@@ -203,7 +197,7 @@ class AccountService:
         account_data: dict[str, Any] = account_update.model_dump(exclude_unset=True)
         if not account_data:
             raise exc.BadRequestError(
-                message=_("No fields to update"), detail={"id": account_id}
+                translatable_message=_("No fields to update"), detail={"id": account_id}
             )
 
         updated_account_id: int | None = await self.crud.update(
@@ -216,9 +210,7 @@ class AccountService:
             )
             if not updated_account_orm:
                 raise exc.DatabaseError(
-                    message=(
-                        _("Updated account could not be fetched from the database")
-                    ),
+                    message="Updated account could not be fetched from the database",
                     detail={"id": account_id, "user_id": self.user_id},
                 )
         else:

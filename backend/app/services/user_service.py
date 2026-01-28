@@ -15,7 +15,6 @@ from app.models.user import UserORM
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.pagination import PaginatedResponse
 from app.schemas.user import UserCreate, UserResponseAdmin, UserUpdate
-from app.services import get_msg
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.USER,
@@ -45,7 +44,8 @@ class UserService:
         )
         if not user_orm:
             raise exc.NotFoundError(
-                message=get_msg(_("User with id {user_id} not found"), user_id=user_id),
+                translatable_message=_("User with id {user_id} not found"),
+                user_id=user_id,
                 detail={"id": user_id},
             )
         return user_orm
@@ -54,9 +54,8 @@ class UserService:
         exists: bool = await self.crud.exists(self.db, email=email)
         if exists:
             raise exc.ConflictError(
-                message=get_msg(
-                    _("User with email '{email}' already exists"), email=email
-                ),
+                translatable_message=_("User with email '{email}' already exists"),
+                email=email,
                 detail={"email": email},
             )
 
@@ -109,7 +108,7 @@ class UserService:
         )
         if not user_orm:
             raise exc.DatabaseError(
-                message=(_("Created user could not be fetched from the database")),
+                message="Created user could not be fetched from the database",
                 detail={"id": user_id, "email": user_create.email},
             )
         return UserResponseAdmin.model_validate(user_orm)
@@ -132,7 +131,7 @@ class UserService:
         user_data: dict[str, Any] = user_update.model_dump(exclude_unset=True)
         if not user_data:
             raise exc.BadRequestError(
-                message=_("No fields to update"), detail={"id": user_id}
+                translatable_message=_("No fields to update"), detail={"id": user_id}
             )
 
         updated_user_id: int | None = await self.crud.update(
@@ -145,7 +144,7 @@ class UserService:
             )
             if not updated_user_orm:
                 raise exc.DatabaseError(
-                    message=(_("Updated user could not be fetched from the database")),
+                    message="Updated user could not be fetched from the database",
                     detail={"id": user_id},
                 )
         else:

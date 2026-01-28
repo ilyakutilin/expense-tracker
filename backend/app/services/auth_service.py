@@ -17,7 +17,6 @@ from app.models.user import UserORM, UserRole
 from app.schemas.auth import Token, UserRegister
 from app.schemas.cache import CachePattern, Entity
 from app.schemas.user import UserResponse
-from app.services import get_msg
 
 
 class AuthService:
@@ -31,9 +30,8 @@ class AuthService:
         exists: bool = await self.crud.exists(self.db, email=email)
         if exists:
             raise exc.ConflictError(
-                message=get_msg(
-                    _("User with email '{email}' already exists"), email=email
-                ),
+                translatable_message=_("User with email '{email}' already exists"),
+                email=email,
                 detail={"email": email},
             )
 
@@ -45,7 +43,8 @@ class AuthService:
         )
         if not user_orm:
             raise exc.NotFoundError(
-                message=get_msg(_("User with id {user_id} not found"), user_id=user_id),
+                translatable_message=_("User with id {user_id} not found"),
+                user_id=user_id,
                 detail={"id": user_id},
             )
         return user_orm
@@ -64,7 +63,7 @@ class AuthService:
         )
         if not user_orm:
             raise exc.DatabaseError(
-                message=(_("Created user could not be fetched from the database")),
+                message="Created user could not be fetched from the database",
                 detail={"id": user_id, "email": user_register.email},
             )
         return UserResponse.model_validate(user_orm)
@@ -75,7 +74,7 @@ class AuthService:
         )
 
         err = exc.UnauthorizedError(
-            message=_("Incorrect email or password"),
+            translatable_message=_("Incorrect email or password"),
         )
 
         if not user_orm:
