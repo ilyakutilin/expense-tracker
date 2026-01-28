@@ -56,6 +56,7 @@ class AccountResponseBaseWithCurrency(AccountResponseBase):
 
 class AccountResponse(AccountResponseBaseWithCurrency):
     parent: AccountResponseBase | None
+    balance: Decimal
     created_at: datetime
     updated_at: datetime
 
@@ -76,6 +77,7 @@ class AccountResponse(AccountResponseBaseWithCurrency):
             type_field_name,
             "parent",
             "currency",
+            "balance",
             "created_at",
             "updated_at",
         ]
