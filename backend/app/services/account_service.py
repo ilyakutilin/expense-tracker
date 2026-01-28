@@ -1,4 +1,5 @@
 import math
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.ext.asyncio import (
@@ -121,7 +122,8 @@ class AccountService:
         account_orm: AccountORM = await self._get_account_orm_by_id(
             account_id, include_deleted
         )
-        return AccountResponse.model_validate(account_orm)
+        balance: Decimal = await self.crud.get_one_balance(self.db, account_orm.id_)
+        return AccountResponse(**account_orm.__dict__, balance=balance)
 
     @cached(pattern=LIST_PATTERN, response_model=PaginatedResponse[AccountResponse])
     async def get_all_accounts(
@@ -139,7 +141,17 @@ class AccountService:
             include_deleted=include_deleted,
             unique=True,
         )
-        accounts = [AccountResponse.model_validate(t) for t in account_orms]
+        balances = await self.crud.get_multiple_balances(
+            self.db, account_ids=[acc.id_ for acc in account_orms]
+        )
+        accounts_with_balances = [
+            (account, balances.get(account.id_, Decimal("0")))
+            for account in account_orms
+        ]
+        accounts = [
+            AccountResponse(**account.__dict__, balance=balance)
+            for account, balance in accounts_with_balances
+        ]
 
         if total_count is None:
             raise exc.CodeError("Total count of accounts cannot be None")
