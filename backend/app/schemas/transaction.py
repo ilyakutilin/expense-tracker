@@ -74,7 +74,18 @@ def _validate_lines(
             )
             raise ValueError(translated_msg)
 
-        lines.sort(key=lambda x: x.amount)  # type: ignore
+        if (lines[0].amount == 0) != (lines[1].amount == 0):
+            raise ValueError(
+                translate(
+                    _(
+                        "Amounts in transaction lines shall either both be zero "
+                        "or shall both be the non-zero values with opposite signs"
+                    )
+                )
+            )
+
+        if any([line.amount != 0 for line in lines]):
+            lines.sort(key=lambda x: x.amount)  # type: ignore
 
         if not (lines[0].amount < 0 and lines[1].amount > 0):  # type: ignore
             raise ValueError(
@@ -102,9 +113,6 @@ class TransactionLineBase(BaseModel):
     def validate_amount(cls, v: Decimal | None) -> Decimal | None:
         if v is None:
             return None
-
-        if v == 0:
-            raise ValueError(translate(_("Amount cannot be zero")))
 
         exponent = v.as_tuple().exponent
 
