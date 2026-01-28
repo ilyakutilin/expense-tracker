@@ -256,6 +256,7 @@ class TransactionLineResponse(BaseModel):
 class TransactionResponse(BaseModel):
     id_: int = Field(..., serialization_alias="id")
     type_: TransactionType = Field(..., serialization_alias="type")
+    lines: list[TransactionLineResponse] = Field(..., min_length=1, max_length=2)
     date: dt.date | None
     comment: str | None
     is_template: bool
@@ -267,52 +268,3 @@ class TransactionResponse(BaseModel):
         from_attributes=True,
         json_encoders={Decimal: format_monetary_decimal},
     )
-
-    @model_validator(mode="after")
-    def split_lines(self) -> "TransactionResponse":
-        if self.lines is None and (self.from_ is None or self.to is None):
-            raise ValueError(
-                translate(
-                    _("Either the 'lines', or 'to' and 'from' fields shall be set")
-                )
-            )
-
-        if self.lines is None and self.from_ is not None and self.to is not None:
-            return self
-
-        lines = self.lines
-        assert lines is not None
-
-        if len(lines) != 2:
-            translated_msg = translate(
-                n_(
-                    "Expected exactly 2 transaction lines, got {len_lines}",
-                    "Expected exactly 2 transaction lines, got {len_lines}",
-                )
-                .set_n(len(lines))
-                .set_kwargs(len_lines=len(lines))
-            )
-            raise ValueError(translated_msg)
-
-        if any(line.amount == 0 for line in lines):
-            raise ValueError(translate(_("Transaction line amounts cannot be zero")))
-
-        negative_lines = [line for line in lines if line.amount < 0]
-        positive_lines = [line for line in lines if line.amount > 0]
-
-        if len(negative_lines) != 1 or len(positive_lines) != 1:
-            translated_msg = translate(
-                _(
-                    "Expected exactly one negative and one positive amount, got "
-                    "{len_negative_lines} negative and {len_positive_lines} positive"
-                ).set_kwargs(
-                    len_negative_lines=len(negative_lines),
-                    len_positive_lines=len(positive_lines),
-                )
-            )
-            raise ValueError(translated_msg)
-
-        self.from_ = negative_lines[0]
-        self.to = positive_lines[0]
-
-        return self
