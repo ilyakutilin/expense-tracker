@@ -24,7 +24,7 @@ transaction_tag = Table(
 
 class TransactionORM(UserOwnedBaseORM):
     type_: Mapped[str] = mapped_column("type", Text, index=True)
-    date: Mapped[dt.date] = mapped_column(Date, index=True)
+    date: Mapped[dt.date | None] = mapped_column(Date, index=True)
     comment: Mapped[str | None] = mapped_column(Text, index=True)
     is_template: Mapped[bool] = mapped_column(server_default=false(), index=True)
 
