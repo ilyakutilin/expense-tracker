@@ -73,23 +73,16 @@ def _validate_lines(
             )
             raise ValueError(translated_msg)
 
-        if (lines[0].amount == 0) != (lines[1].amount == 0):
+        assert lines[0].amount is not None and lines[1].amount is not None
+        if ((lines[0].amount == 0) != (lines[1].amount == 0)) or (
+            (lines[0].amount < 0) != (lines[1].amount > 0)
+        ):
             raise ValueError(
                 translate(
                     _(
                         "Amounts in transaction lines shall either both be zero "
                         "or shall both be the non-zero values with opposite signs"
                     )
-                )
-            )
-
-        if any([line.amount != 0 for line in lines]):
-            lines.sort(key=lambda x: x.amount)  # type: ignore
-
-        if not (lines[0].amount < 0 and lines[1].amount > 0):  # type: ignore
-            raise ValueError(
-                translate(
-                    _("Amounts in transaction lines shall be with opposite signs")
                 )
             )
 
