@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Text, text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import CheckConstraint, ForeignKey, Index, Text, exists, select, text
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.models.base import UserOwnedBaseORM
 
@@ -49,6 +49,10 @@ class AccountORM(UserOwnedBaseORM):
     user: Mapped["UserORM"] = relationship(
         "UserORM",
         back_populates="accounts",
+    )
+
+    has_children = column_property(
+        exists(select(1).where(UserOwnedBaseORM.id_ == parent_id))
     )
 
     __table_args__ = (

@@ -141,12 +141,15 @@ class AccountService:
             include_deleted=include_deleted,
             unique=True,
         )
+        essential_account_ids = [
+            acc.id_ for acc in account_orms if not acc.has_children
+        ]
+
         balances = await self.crud.get_multiple_balances(
-            self.db, account_ids=[acc.id_ for acc in account_orms]
+            self.db, account_ids=essential_account_ids
         )
         accounts_with_balances = [
-            (account, balances.get(account.id_, Decimal("0")))
-            for account in account_orms
+            (account, balances.get(account.id_)) for account in account_orms
         ]
         accounts = [
             AccountResponse(**account.__dict__, balance=balance)

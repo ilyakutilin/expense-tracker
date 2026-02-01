@@ -56,7 +56,7 @@ class AccountResponseBaseWithCurrency(AccountResponseBase):
 
 class AccountResponse(AccountResponseBaseWithCurrency):
     parent: AccountResponseBase | None
-    balance: Decimal
+    balance: Decimal | None = Field(..., exclude_if=lambda v: v is None)
     created_at: datetime
     updated_at: datetime
 
@@ -77,8 +77,11 @@ class AccountResponse(AccountResponseBaseWithCurrency):
             type_field_name,
             "parent",
             "currency",
-            "balance",
             "created_at",
             "updated_at",
         ]
+        if self.balance is not None:
+            created_at_idx = key_order.index("created_at")
+            key_order.insert(created_at_idx, "balance")
+
         return {k: serialized[k] for k in key_order}
