@@ -75,7 +75,7 @@ class UserService:
     ) -> PaginatedResponse[UserResponseAdmin]:
         conditions = filter_params.manager.build_conditions(filter_params)
 
-        user_orms, total_count = await self.crud.get_all(
+        user_orms, total_count = await self.crud.get_all_paginated(
             db_session=self.db,
             filter_conditions=conditions,
             include_deleted=include_deleted,

@@ -89,7 +89,7 @@ class TagService:
     ) -> PaginatedResponse[TagResponse]:
         conditions = filter_params.manager.build_conditions(filter_params)
 
-        tag_orms, total_count = await self.crud.get_all(
+        tag_orms, total_count = await self.crud.get_all_paginated(
             db_session=self.db,
             filter_conditions=conditions,
             user_id=self.user_id,

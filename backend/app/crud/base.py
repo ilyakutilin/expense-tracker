@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.strategy_options import _AbstractLoad
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.core.exceptions import CodeError
 from app.filters.base import FilterConditions
 from app.models.base import BaseORM, UserOwnedBaseORM
 
@@ -130,6 +131,37 @@ class CRUDBase(Generic[ModelType]):
         user_id: int | None = None,
         include_deleted: bool = False,
         unique: bool = False,
+    ) -> list[ModelType]:
+        stmt = select(self.model)
+
+        stmt = (
+            stmt.where(self._build_user_clause(user_id))
+            .where(self._build_include_deleted_clause(include_deleted))
+            .where(*filter_conditions.where_clauses)
+        )
+
+        stmt = stmt.options(*self._get_options())
+
+        if filter_conditions.has_ordering():
+            for order_clause in filter_conditions.order_by_clauses:
+                stmt = stmt.order_by(order_clause)
+
+        result = await db_session.execute(stmt)
+        scalar_result: ScalarResult[ModelType] = result.scalars()
+        if unique:
+            scalar_result = scalar_result.unique()
+        orm_objs = list(scalar_result.all())
+
+        return orm_objs
+
+    async def get_all_paginated(
+        self,
+        db_session: AsyncSession,
+        *,
+        filter_conditions: FilterConditions,
+        user_id: int | None = None,
+        include_deleted: bool = False,
+        unique: bool = False,
     ) -> tuple[list[ModelType], int]:
         stmts: dict[str, Select] = {
             "main_stmt": select(self.model),
@@ -153,9 +185,13 @@ class CRUDBase(Generic[ModelType]):
             for order_clause in filter_conditions.order_by_clauses:
                 main_stmt = main_stmt.order_by(order_clause)
 
-        if filter_conditions.has_pagination():
-            offset, limit = filter_conditions.offset_limit
-            main_stmt = main_stmt.offset(offset).limit(limit)
+        if filter_conditions.offset_limit is None:
+            raise CodeError(
+                "Filter confitions must have pagination params set in order to use "
+                f"get_all_paginated. Current filter conditions: {filter_conditions}"
+            )
+        offset, limit = filter_conditions.offset_limit
+        main_stmt = main_stmt.offset(offset).limit(limit)
 
         result = await db_session.execute(main_stmt)
         scalar_result: ScalarResult[ModelType] = result.scalars()
