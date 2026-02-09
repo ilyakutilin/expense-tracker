@@ -32,7 +32,7 @@ class FilterConditions:
 
     where_clauses: list[ColumnElement[bool]]
     order_by_clauses: list[UnaryExpression]
-    offset_limit: tuple[int, int]
+    offset_limit: tuple[int, int] | None
 
     def has_filters(self) -> bool:
         """Check if any filter conditions exist"""
@@ -42,17 +42,13 @@ class FilterConditions:
         """Check if any ordering exists"""
         return len(self.order_by_clauses) > 0
 
-    def has_pagination(self) -> bool:
-        """Check if pagination params are set"""
-        return bool(self.offset_limit)
-
 
 class BaseFilterParams(BaseModel, ABC):
     """Base class for filter parameters"""
 
     # Pagination
-    page: int = Field(1, ge=1, description="Page number")
-    page_size: int = Field(20, ge=1, le=100, description="Items per page")
+    page: int | None = Field(None, ge=1, description="Page number")
+    page_size: int | None = Field(None, ge=1, le=100, description="Items per page")
 
     # Multi-field ordering with - prefix for DESC
     order_by: str | None = Field(
@@ -62,9 +58,15 @@ class BaseFilterParams(BaseModel, ABC):
     # Search
     search: str | None = Field(None, description="Search term")
 
-    def get_offset(self) -> int:
+    def get_offset_limit(self) -> tuple[int, int] | None:
         """Calculate SQL offset from page number"""
-        return (self.page - 1) * self.page_size
+        if self.page is None or self.page_size is None:
+            return None
+
+        offset = (self.page - 1) * self.page_size
+        limit = self.page_size
+
+        return offset, limit
 
     def parse_order_by(self) -> list[tuple[str, str]]:
         """
@@ -240,5 +242,5 @@ class FilterManager:
         return FilterConditions(
             where_clauses=where_clauses,
             order_by_clauses=order_by_clauses,
-            offset_limit=(params.get_offset(), params.page_size),
+            offset_limit=params.get_offset_limit(),
         )
