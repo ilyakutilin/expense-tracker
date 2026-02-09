@@ -77,14 +77,19 @@ class AccountResponseFlat(AccountResponseBaseWithCurrency):
             type_field_name,
             "parent",
             "currency",
+            "balance",
+            "children",
             "created_at",
             "updated_at",
         ]
-        if self.balance is not None:
-            created_at_idx = key_order.index("created_at")
-            key_order.insert(created_at_idx, "balance")
+        sorted_serialized: dict[str, Any] = {}
+        for k in key_order:
+            try:
+                sorted_serialized[k] = serialized[k]
+            except KeyError:
+                continue
 
-        return {k: serialized[k] for k in key_order}
+        return sorted_serialized
 
 
 class AccountResponseTree(AccountResponseFlat):
