@@ -168,7 +168,7 @@ class AccountService:
 
         return root_accounts
 
-    @cached(pattern=LIST_PATTERN, response_model=list[AccountResponseTree])
+    @cached(pattern=LIST_PATTERN, response_model=AccountResponseTree)
     async def get_all_accounts(
         self,
         *,
