@@ -54,9 +54,9 @@ class AccountResponseBaseWithCurrency(AccountResponseBase):
     currency: CurrencyResponse | None
 
 
-class AccountResponse(AccountResponseBaseWithCurrency):
+class AccountResponseFlat(AccountResponseBaseWithCurrency):
     parent: AccountResponseBase | None
-    balance: Decimal | None = Field(..., exclude_if=lambda v: v is None)
+    balance: Decimal | None = Field(None, exclude_if=lambda v: v is None)
     created_at: datetime
     updated_at: datetime
 
@@ -85,3 +85,7 @@ class AccountResponse(AccountResponseBaseWithCurrency):
             key_order.insert(created_at_idx, "balance")
 
         return {k: serialized[k] for k in key_order}
+
+
+class AccountResponseTree(AccountResponseFlat):
+    children: list["AccountResponseTree"] = []

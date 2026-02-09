@@ -200,6 +200,26 @@ def _get_account_orms(user: UserORM, currencies: list[CurrencyORM]) -> dict[str,
         updated_at=timestamp,
     )
 
+    timestamp = _generate_offset_datetime(user.created_at, "m", 12)
+    deposit = AccountORM(
+        name="Вклады",
+        type_=AccountType.ASSET.value,
+        parent=savings,
+        user=user,
+        created_at=timestamp,
+        updated_at=timestamp,
+    )
+
+    timestamp = _generate_offset_datetime(user.created_at, "m", 13)
+    investment = AccountORM(
+        name="Инвестиции",
+        type_=AccountType.ASSET.value,
+        parent=savings,
+        user=user,
+        created_at=timestamp,
+        updated_at=timestamp,
+    )
+
     timestamp = _generate_offset_datetime(user.created_at, "m", 15)
     expenses = AccountORM(
         name="Расходы",
@@ -238,8 +258,9 @@ def _get_account_orms(user: UserORM, currencies: list[CurrencyORM]) -> dict[str,
     account_data: dict[str, AccountData] = {
         "debit": AccountData("Дебетовая карта", AccountType.ASSET, None, 0, 3, False),
         "cash": AccountData("Наличные", AccountType.ASSET, None, 0, 3, False),
-        "savings": AccountData("Вклад", AccountType.ASSET, savings, 0, 5, False),
+        "savings": AccountData("Вклад", AccountType.ASSET, deposit, 0, 5, False),
         "dollars": AccountData("Доллары под матрасом", AccountType.ASSET, savings, 1, 4, False),
+        "brokerage": AccountData("Брокерский счёт", AccountType.ASSET, investment, 0, 4, False),
         "groceries": AccountData("Продукты", AccountType.EXPENSE, expenses, 0, 4, False),
         "fun": AccountData("Развлечения", AccountType.EXPENSE, expenses, 0, 5, False),
         "clothes": AccountData("Одежда и обувь", AccountType.EXPENSE, expenses, 0, 5, False),
@@ -248,10 +269,11 @@ def _get_account_orms(user: UserORM, currencies: list[CurrencyORM]) -> dict[str,
     }
 
     accounts: dict[str, AccountORM] = {
-        "savings_parent": savings,
+        "savings_grandparent": savings,
+        "deposit_parent": deposit,
+        "investment_parent": investment,
         "expenses_parent": expenses,
     }
-    # TODO: Why no parent??
     for key, acc in account_data.items():
         accounts[key] = AccountORM(
             name=acc.name,
