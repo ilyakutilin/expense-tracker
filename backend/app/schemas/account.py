@@ -54,9 +54,9 @@ class AccountResponseBaseWithCurrency(AccountResponseBase):
     currency: CurrencyResponse | None
 
 
-class AccountResponse(AccountResponseBaseWithCurrency):
+class AccountResponseFlat(AccountResponseBaseWithCurrency):
     parent: AccountResponseBase | None
-    balance: Decimal
+    balance: Decimal | None = Field(None, exclude_if=lambda v: v is None)
     created_at: datetime
     updated_at: datetime
 
@@ -78,7 +78,19 @@ class AccountResponse(AccountResponseBaseWithCurrency):
             "parent",
             "currency",
             "balance",
+            "children",
             "created_at",
             "updated_at",
         ]
-        return {k: serialized[k] for k in key_order}
+        sorted_serialized: dict[str, Any] = {}
+        for k in key_order:
+            try:
+                sorted_serialized[k] = serialized[k]
+            except KeyError:
+                continue
+
+        return sorted_serialized
+
+
+class AccountResponseTree(AccountResponseFlat):
+    children: list["AccountResponseTree"] = []

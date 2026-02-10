@@ -1,4 +1,3 @@
-import math
 from decimal import Decimal
 from typing import Any
 
@@ -12,9 +11,13 @@ from app.core.cache import cached, invalidate_cache
 from app.core.i18n import _
 from app.filters.account import AccountFilterParams
 from app.models.account import AccountORM
-from app.schemas.account import AccountCreate, AccountResponse, AccountUpdate
+from app.schemas.account import (
+    AccountCreate,
+    AccountResponseFlat,
+    AccountResponseTree,
+    AccountUpdate,
+)
 from app.schemas.cache import CachePattern, Entity
-from app.schemas.pagination import PaginatedResponse
 
 DETAIL_PATTERN = CachePattern(
     entity=Entity.ACCOUNT,
@@ -115,59 +118,95 @@ class AccountService:
                 detail={"account_id": account_id, "parent_id": parent_id},
             )
 
-    @cached(pattern=DETAIL_PATTERN, response_model=AccountResponse)
+    @cached(pattern=DETAIL_PATTERN, response_model=AccountResponseFlat)
     async def get_account_by_id(
         self, *, account_id: int, include_deleted: bool = False
-    ) -> AccountResponse:
+    ) -> AccountResponseFlat:
         account_orm: AccountORM = await self._get_account_orm_by_id(
             account_id, include_deleted
         )
         balance: Decimal = await self.crud.get_one_balance(self.db, account_orm.id_)
-        return AccountResponse(**account_orm.__dict__, balance=balance)
+        return AccountResponseFlat(**account_orm.__dict__, balance=balance)
 
-    @cached(pattern=LIST_PATTERN, response_model=PaginatedResponse[AccountResponse])
+    def _build_tree(
+        self, accounts: list[AccountResponseFlat]
+    ) -> list[AccountResponseTree]:
+        """
+        Build a nested tree structure from a flat list of accounts.
+
+        Algorithm:
+        1. Create a dictionary mapping account IDs to AccountTree objects
+        2. Iterate through accounts and attach each to its parent
+        3. Return only root-level accounts (those with parent_id=None)
+        """
+        # Create a mapping of id -> AccountTree
+        account_map: dict[int, AccountResponseTree] = {}
+
+        # First pass: Create AccountTree objects for all accounts
+        for account in accounts:
+            account_map[account.id_] = AccountResponseTree.model_validate(account)
+
+        # Second pass: Build parent-child relationships
+        root_accounts: list[AccountResponseTree] = []
+
+        for account in accounts:
+            account_tree = account_map[account.id_]
+
+            if account.parent is None:
+                # This is a root account
+                root_accounts.append(account_tree)
+            else:
+                # This account has a parent, add it to parent's children
+                parent = account_map.get(account.parent.id_)
+                if parent:
+                    parent.children.append(account_tree)
+                else:
+                    raise exc.CodeError(
+                        f"Orphaned account: parent with ID {account.parent.id_} "
+                        "does not exist"
+                    )
+
+        return root_accounts
+
+    @cached(pattern=LIST_PATTERN, response_model=AccountResponseTree)
     async def get_all_accounts(
         self,
         *,
         filter_params: AccountFilterParams,
         include_deleted: bool = False,
-    ) -> PaginatedResponse[AccountResponse]:
+    ) -> list[AccountResponseTree]:
         conditions = filter_params.manager.build_conditions(filter_params)
 
-        account_orms, total_count = await self.crud.get_all(
+        account_orms = await self.crud.get_all(
             db_session=self.db,
             filter_conditions=conditions,
             user_id=self.user_id,
             include_deleted=include_deleted,
             unique=True,
         )
+        essential_account_ids = [
+            acc.id_ for acc in account_orms if not acc.has_children
+        ]
+
         balances = await self.crud.get_multiple_balances(
-            self.db, account_ids=[acc.id_ for acc in account_orms]
+            self.db, account_ids=essential_account_ids
         )
         accounts_with_balances = [
-            (account, balances.get(account.id_, Decimal("0")))
-            for account in account_orms
+            (account, balances.get(account.id_)) for account in account_orms
         ]
-        accounts = [
-            AccountResponse(**account.__dict__, balance=balance)
+        accounts_flat = [
+            AccountResponseFlat(**account.__dict__, balance=balance)
             for account, balance in accounts_with_balances
         ]
 
-        if total_count is None:
-            raise exc.CodeError("Total count of accounts cannot be None")
+        accounts_tree = self._build_tree(accounts_flat)
 
-        return PaginatedResponse[AccountResponse](
-            total=total_count,
-            page=filter_params.page,
-            page_size=filter_params.page_size,
-            total_pages=math.ceil(total_count / filter_params.page_size)
-            if total_count > 0
-            else 0,
-            items=accounts,
-        )
+        return accounts_tree
 
     @invalidate_cache(LIST_PATTERN)
-    async def create_account(self, *, account_create: AccountCreate) -> AccountResponse:
+    async def create_account(
+        self, *, account_create: AccountCreate
+    ) -> AccountResponseFlat:
         await self._check_name_exists(account_create.name)
         await self._check_referential_integrity(
             account_create.parent_id, account_create.currency_id
@@ -189,12 +228,12 @@ class AccountService:
                     "user_id": self.user_id,
                 },
             )
-        return AccountResponse.model_validate(account_orm)
+        return AccountResponseFlat.model_validate(account_orm)
 
     @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
     async def update_account(
         self, *, account_id: int, account_update: AccountUpdate
-    ) -> AccountResponse:
+    ) -> AccountResponseFlat:
         account_orm: AccountORM = await self._get_account_orm_by_id(account_id)
 
         if account_update.name:
@@ -227,7 +266,7 @@ class AccountService:
                 )
         else:
             updated_account_orm = account_orm
-        return AccountResponse.model_validate(updated_account_orm)
+        return AccountResponseFlat.model_validate(updated_account_orm)
 
     @invalidate_cache(DETAIL_PATTERN, LIST_PATTERN)
     async def delete_account(self, *, account_id: int, perm: bool = False) -> None:

@@ -5,6 +5,7 @@ from typing import Any, Callable, Coroutine, ParamSpec, TypeVar, cast
 
 from loguru import logger
 from pydantic import BaseModel, ValidationError
+from pydantic_core import PydanticSerializationError
 from redis import asyncio as aioredis
 
 from app.core import exceptions as exc
@@ -109,20 +110,24 @@ cache = RedisCache()
 
 
 def _serialize_value(value: Any) -> str:
-    if isinstance(value, BaseModel):
-        # Single Pydantic model
-        return value.model_dump_json(by_alias=False)
-    elif isinstance(value, list):
-        if value and all(isinstance(item, BaseModel) for item in value):
-            return json.dumps([item.model_dump(by_alias=False) for item in value])
-        else:
-            return json.dumps(value)
-    elif isinstance(value, (dict, list, str, int, float, bool, type(None))):
-        # Standard JSON-serializable types
-        return json.dumps(value)
-    else:
-        # Fallback for other types
-        return json.dumps(str(value))
+    try:
+        if isinstance(value, BaseModel):
+            return value.model_dump_json(by_alias=False, warnings="error")
+        elif isinstance(value, list) and all(
+            isinstance(item, BaseModel) for item in value
+        ):
+            return json.dumps(
+                [
+                    item.model_dump_json(by_alias=False, warnings="error")
+                    for item in value
+                ]
+            )
+    except PydanticSerializationError as e:
+        raise exc.CacheError(f"Failed to serialize the value: {e}")
+    raise exc.CacheError(
+        f"Serialization failure: value is of type {type(value)}, "
+        "while only BaseModel and list[BaseModel] are supported"
+    )
 
 
 def _deserialize_value(
@@ -131,13 +136,15 @@ def _deserialize_value(
     if not data:
         raise exc.CacheError("No data in cache")
 
-    parsed: dict[str, Any] | list[dict[str, Any]] = json.loads(data)
+    parsed = json.loads(data)
 
     try:
         if isinstance(parsed, list):
-            return [model_class.model_validate(item, by_name=True) for item in parsed]
+            return [
+                model_class.model_validate_json(item, by_name=True) for item in parsed
+            ]
         else:
-            return model_class.model_validate(parsed, by_name=True)
+            return model_class.model_validate_json(data, by_name=True)
     except ValidationError as e:
         raise exc.CacheError(f"Failed to validate JSON from cache: {e}")
 
@@ -261,10 +268,13 @@ def cached(
 
             # Serialize and cache
             if result is not None and cache_key:
-                serialized = _serialize_value(result)
-                success = await cache.set(cache_key, serialized, expire)
-                if not success:
-                    logger.warning(f"Failed to set the cache by key {cache_key}")
+                try:
+                    serialized = _serialize_value(result)
+                    success = await cache.set(cache_key, serialized, expire)
+                    if not success:
+                        logger.warning(f"Failed to set the cache by key {cache_key}")
+                except exc.CacheError as e:
+                    logger.warning(e)
 
             return cast(T, result)
 
