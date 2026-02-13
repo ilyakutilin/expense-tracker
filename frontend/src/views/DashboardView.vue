@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import OperationInput from '@/components/common/input/OperationInput.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useDashboardStore } from '@/stores/dashboard'
 import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const dashboard = useDashboardStore()
 const router = useRouter()
 
 function handleLogout() {
