@@ -17,8 +17,11 @@ export interface AccountResponseBase {
   type: string
 }
 
-export interface AccountResponseFlat extends AccountResponseBase {
+export interface AccountResponseBaseWithCurrency extends AccountResponseBase {
   currency: CurrencyResponse
+}
+
+export interface AccountResponseFlat extends AccountResponseBaseWithCurrency {
   parent: AccountResponseBase
   balance: string
   created_at: string
