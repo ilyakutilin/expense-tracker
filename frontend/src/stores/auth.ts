@@ -1,5 +1,5 @@
 import { authApi } from '@/api/auth'
-import type { UserLogin, UserResponse } from '@/types'
+import type { UserLogin, UserResponse } from '@/types/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 

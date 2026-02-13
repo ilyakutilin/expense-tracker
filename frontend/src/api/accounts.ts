@@ -1,4 +1,4 @@
-import type { AccountCreate, AccountResponseFlat, AccountResponseTree } from '@/types'
+import type { AccountCreate, AccountResponseFlat, AccountResponseTree } from '@/types/account'
 import apiClient from './client'
 
 export const accountsApi = {

@@ -1,5 +1,5 @@
 import { accountsApi } from '@/api/accounts'
-import type { AccountCreate, AccountResponseTree } from '@/types'
+import type { AccountCreate, AccountResponseTree } from '@/types/account'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 

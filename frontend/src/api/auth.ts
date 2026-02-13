@@ -1,4 +1,4 @@
-import type { Token, UserLogin, UserResponse } from '@/types'
+import type { Token, UserLogin, UserResponse } from '@/types/auth'
 import apiClient from './client'
 
 export const authApi = {
