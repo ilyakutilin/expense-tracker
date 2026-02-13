@@ -1,0 +1,75 @@
+@theme {
+  --color-primary: oklch(56.34% 0.231 265.72);
+  --color-secondary: #60a5fa;
+  --color-dark: #1e293b;
+  --color-light: #f8fafc;
+
+  /* Define your custom spacing, sizing, etc. */
+  --spacing-sidebar-open: 240px;
+  --spacing-sidebar-closed: 0px;
+
+  /* Custom animation durations */
+  --duration-200: 0.2s;
+  --duration-300: 0.3s;
+}
+
+/* Custom components using @layer */
+@layer components {
+  .sidebar-open {
+    width: var(--spacing-sidebar-open);
+  }
+  .sidebar-closed {
+    width: var(--spacing-sidebar-closed);
+    opacity: 0;
+  }
+  .transition-sidebar {
+    transition: all var(--duration-300) ease;
+  }
+  .operation-item {
+    transition: all var(--duration-200) ease;
+  }
+  .operation-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  .account-nested {
+    padding-left: 2rem;
+  }
+  .fade-in {
+    animation: fadeIn var(--duration-300);
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .spin-animation {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  .live-search-container {
+    position: relative;
+  }
+  .live-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}
